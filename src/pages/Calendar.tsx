@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Card, PageHeader, Button, Input, IntegrationNote } from '../components/ui'
 import { IconPlus, IconTrash } from '../components/icons'
 import { useStore, uid } from '../lib/store'
+import { taskAgenda, agendaByDate } from '../lib/agenda'
 
 type Event = { id: string; date: string; title: string } // date = YYYY-MM-DD
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -35,6 +36,9 @@ export default function Calendar() {
     })
   }
 
+  // Tasks (from the Tasks page + the weekly planner) shown alongside events.
+  const taskMap = useMemo(() => agendaByDate(taskAgenda()), [])
+  const dayTasks = (dateStr: string) => taskMap[dateStr] ?? []
   const dayEvents = (dateStr: string) => events.filter((e) => e.date === dateStr)
   const addEvent = () => {
     if (!draft.trim()) return
@@ -49,7 +53,7 @@ export default function Calendar() {
     <div>
       <PageHeader
         title="Calendar"
-        subtitle="Plan the month. Click a day to add events."
+        subtitle="Your events, tasks and weekly planner — all on one calendar."
         action={
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => move(-1)}>‹</Button>
@@ -81,6 +85,8 @@ export default function Calendar() {
               if (d === null) return <div key={i} />
               const dateStr = iso(view.y, view.m, d)
               const evs = dayEvents(dateStr)
+              const tks = dayTasks(dateStr)
+              const markers = evs.length + tks.length
               const isToday = dateStr === todayStr
               const isSel = dateStr === selected
               return (
@@ -95,8 +101,8 @@ export default function Calendar() {
                 >
                   <span className="text-sm font-semibold" style={{ color: isSel ? 'var(--color-on-accent)' : 'var(--color-text)' }}>{d}</span>
                   <div className="flex flex-wrap gap-0.5 mt-auto">
-                    {evs.slice(0, 3).map((e) => (
-                      <span key={e.id} className="h-1.5 w-1.5 rounded-full" style={{ background: isSel ? 'var(--color-on-accent)' : 'var(--color-accent)' }} />
+                    {Array.from({ length: Math.min(markers, 4) }).map((_, k) => (
+                      <span key={k} className="h-1.5 w-1.5 rounded-full" style={{ background: isSel ? 'var(--color-on-accent)' : 'var(--color-accent)', opacity: k < evs.length ? 1 : 0.5 }} />
                     ))}
                   </div>
                 </button>
@@ -114,7 +120,7 @@ export default function Calendar() {
             <Button type="submit"><IconPlus width={16} height={16} /></Button>
           </form>
           <ul className="flex flex-col gap-1">
-            {dayEvents(selected).length === 0 && (
+            {dayEvents(selected).length === 0 && dayTasks(selected).length === 0 && (
               <li className="text-sm py-4 text-center" style={{ color: 'var(--color-muted)' }}>Nothing planned.</li>
             )}
             {dayEvents(selected).map((e) => (
@@ -124,6 +130,17 @@ export default function Calendar() {
                 <button onClick={() => removeEvent(e.id)} className="opacity-0 group-hover:opacity-60" style={{ color: 'var(--color-muted)' }}>
                   <IconTrash width={14} height={14} />
                 </button>
+              </li>
+            ))}
+            {dayTasks(selected).map((t, i) => (
+              <li key={`t${i}`} className="flex items-center gap-2 py-2 px-2 rounded-lg">
+                <span className="h-2 w-2 rounded-full shrink-0" style={{ background: 'var(--color-accent)', opacity: 0.5 }} />
+                <span className="flex-1 text-sm" style={{ color: 'var(--color-text)', textDecoration: t.done ? 'line-through' : 'none', opacity: t.done ? 0.5 : 1 }}>
+                  {t.title}
+                </span>
+                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ background: 'var(--color-bg)', color: 'var(--color-muted)', border: '1px solid var(--color-border)' }}>
+                  {t.source}
+                </span>
               </li>
             ))}
           </ul>

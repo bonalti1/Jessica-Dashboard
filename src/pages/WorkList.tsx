@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Card, PageHeader, Input, Button } from '../components/ui'
 import { IconPlus, IconTrash, IconCheck } from '../components/icons'
 import { useStore, uid } from '../lib/store'
@@ -176,7 +176,38 @@ export default function WorkList() {
       return { ...b, weeks: { ...b.weeks, [weekKey]: cur } }
     })
 
-  const isThisWeek = weekKey === toISO(startOfWeek(new Date()))
+  const thisWeekKey = toISO(startOfWeek(new Date()))
+  const isThisWeek = weekKey === thisWeekKey
+
+  // Auto-roll: pull incomplete tasks from past weeks into the real current
+  // week (same weekday). Completed tasks stay in history. Runs per board; the
+  // count-guard means it stops once there's nothing left to move (no loop).
+  const [rolledNote, setRolledNote] = useState(0)
+  useEffect(() => {
+    const raw = tab === 'Home' ? homeRaw : workRaw
+    const b = migrate(raw)
+    const movedByDay: Record<string, Item[]> = {}
+    const newWeeks: Record<string, WeekBoard> = {}
+    let count = 0
+    for (const [wk, wkBoard] of Object.entries(b.weeks)) {
+      if (wk >= thisWeekKey) { newWeeks[wk] = wkBoard; continue }
+      const kept = emptyWeek()
+      for (const day of DAYS) {
+        for (const it of wkBoard[day] ?? []) {
+          if (it.done) kept[day].push(it)
+          else { (movedByDay[day] ??= []).push(it); count++ }
+        }
+      }
+      newWeeks[wk] = kept
+    }
+    if (count === 0) return
+    const cur = { ...emptyWeek(), ...(b.weeks[thisWeekKey] ?? {}) }
+    for (const day of DAYS) cur[day] = [...(cur[day] ?? []), ...(movedByDay[day] ?? [])]
+    newWeeks[thisWeekKey] = cur
+    ;(tab === 'Home' ? setHome : setWork)({ ...b, weeks: newWeeks })
+    setRolledNote(count)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, homeRaw, workRaw])
 
   return (
     <div onDragEnd={() => { setDrag(null); setOverBucket(null) }}>
@@ -215,6 +246,17 @@ export default function WorkList() {
           <Button variant="outline" onClick={copyLastWeek} title="Copy last week's tasks into this week">Copy last week</Button>
         )}
       </div>
+
+      {rolledNote > 0 && (
+        <button
+          onClick={() => { setWeekStart(startOfWeek(new Date())); setRolledNote(0) }}
+          className="w-full text-left mb-5 px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-2 transition hover:scale-[1.005]"
+          style={{ background: 'color-mix(in srgb, var(--color-accent) 14%, var(--color-surface))', border: '1px solid color-mix(in srgb, var(--color-accent) 40%, transparent)', color: 'var(--color-text)' }}
+        >
+          ⤴ Rolled over {rolledNote} unfinished task{rolledNote === 1 ? '' : 's'} from earlier weeks into this week.
+          {!isThisWeek && <span style={{ color: 'var(--color-accent)' }}>Jump to this week →</span>}
+        </button>
+      )}
 
       <div className="flex flex-col xl:flex-row gap-5">
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 flex-1">

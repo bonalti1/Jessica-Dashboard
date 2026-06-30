@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Card, PageHeader, Button, IntegrationNote } from '../components/ui'
 import { IconBell } from '../components/icons'
+import { taskAgenda } from '../lib/agenda'
 
 type Reminder = { source: string; date: string; text: string; days: number }
 
@@ -39,6 +40,13 @@ function gather(): Reminder[] {
     if (d <= 30) out.push({ source: 'Birthday', date: next.toISOString().slice(0, 10), text: `${m.name}'s birthday 🎂`, days: d })
   })
 
+  // Upcoming dated tasks (Tasks page + weekly planner), incomplete only.
+  taskAgenda().forEach((t) => {
+    if (t.done) return
+    const d = daysFromToday(t.date)
+    if (d >= 0 && d <= 30) out.push({ source: t.source === 'Task' ? 'To-do' : `${t.source} to-do`, date: t.date, text: t.title, days: d })
+  })
+
   return out.sort((a, b) => a.days - b.days)
 }
 
@@ -59,7 +67,7 @@ export default function Notifications() {
     <div>
       <PageHeader
         title="Notifications"
-        subtitle="What's coming up in the next 30 days, pulled from your calendar and family."
+        subtitle="What's coming up in the next 30 days — tasks, events, appointments and birthdays."
         action={
           perm !== 'granted'
             ? <Button onClick={enable}><IconBell width={16} height={16} /> Enable alerts</Button>
