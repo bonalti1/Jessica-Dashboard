@@ -3,12 +3,10 @@ import { Card, PageHeader, Button, Input } from '../components/ui'
 import { IconPlus, IconTrash, IconCheck } from '../components/icons'
 import { useStore, uid } from '../lib/store'
 import { useToast } from '../lib/toast'
+import { money } from '../lib/format'
 
 type Bill = { id: string; name: string; amount: number }
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-
-const money = (n: number) =>
-  n.toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 
 /**
  * One month cell.

@@ -258,6 +258,20 @@ export default function WorkList() {
         </button>
       )}
 
+      {(() => {
+        const total = DAYS.reduce((s, d) => s + (week[d]?.length ?? 0), 0)
+        const done = DAYS.reduce((s, d) => s + (week[d]?.filter((i) => i.done).length ?? 0), 0)
+        if (total === 0) return null
+        return (
+          <div className="flex items-center gap-3 mb-5">
+            <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+              <div className="h-full rounded-full transition-all" style={{ width: `${(done / total) * 100}%`, background: 'var(--color-accent)' }} />
+            </div>
+            <span className="text-sm font-semibold tnum" style={{ color: 'var(--color-muted)' }}>{done}/{total} done</span>
+          </div>
+        )
+      })()}
+
       <div className="flex flex-col xl:flex-row gap-5">
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 flex-1">
           {DAYS.map((day, idx) => {

@@ -5,6 +5,7 @@ import { IconTasks, IconPayments, IconCalendar, IconHealth, IconBell, IconPlus }
 import { useStore, uid } from '../lib/store'
 import { taskAgenda } from '../lib/agenda'
 import { todayISO, daysUntil, formatDayShort, parseDate } from '../lib/dates'
+import { money } from '../lib/format'
 
 type Task = { id: string; text: string; done: boolean; created: number; due?: string }
 type Bill = { id: string; name: string; amount: number }
@@ -12,8 +13,6 @@ type Event = { id: string; date: string; title: string }
 type Appt = { id: string; who: string; what: string; date: string }
 type Member = { id: string; name: string; birthday: string }
 type Weigh = { id: string; date: string; value: number }
-
-const money = (n: number) => n.toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 
 function greeting(): string {
   const h = new Date().getHours()
@@ -23,7 +22,7 @@ function greeting(): string {
 }
 
 export default function Home() {
-  const [profile] = useStore<{ name: string }>('profile', { name: 'Jessica' })
+  const [profile] = useStore<{ name: string; photo?: string }>('profile', { name: 'Jessica' })
   const [tasks, setTasks] = useStore<Task[]>('tasks.master', [])
   const [bills] = useStore<Bill[]>('pay.bills', [])
   const [cells] = useStore<Record<string, number>>('pay.cells', {})
@@ -86,11 +85,14 @@ export default function Home() {
 
   return (
     <div className="fade-up">
-      <div className="mb-7">
-        <p className="text-sm" style={{ color: 'var(--color-muted)' }}>{dateLabel}</p>
-        <h1 className="text-[32px] font-semibold leading-tight mt-1" style={{ color: 'var(--color-text)' }}>
-          {greeting()}, {profile.name || 'Jessica'} 👋
-        </h1>
+      <div className="mb-7 flex items-center gap-4">
+        {profile.photo && <img src={profile.photo} alt="" className="h-14 w-14 rounded-full object-cover shrink-0" />}
+        <div>
+          <p className="text-sm" style={{ color: 'var(--color-muted)' }}>{dateLabel}</p>
+          <h1 className="text-[32px] font-semibold leading-tight mt-1" style={{ color: 'var(--color-text)' }}>
+            {greeting()}, {(profile.name || 'Jessica').split(' ')[0]} 👋
+          </h1>
+        </div>
       </div>
 
       {/* Quick add */}

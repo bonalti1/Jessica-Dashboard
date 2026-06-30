@@ -48,6 +48,34 @@ const SUGGESTIONS = [
   'Summarize my week.',
 ]
 
+/** Inline markdown: **bold** and `code`. */
+function inline(text: string) {
+  return text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g).map((p, i) => {
+    if (/^\*\*[^*]+\*\*$/.test(p)) return <strong key={i}>{p.slice(2, -2)}</strong>
+    if (/^`[^`]+`$/.test(p)) return <code key={i} style={{ background: 'var(--color-surface)', padding: '1px 4px', borderRadius: 4 }}>{p.slice(1, -1)}</code>
+    return <span key={i}>{p}</span>
+  })
+}
+
+/** Lightweight markdown — headings, bullets, numbered lists, bold/code, line breaks. */
+function Markdown({ text }: { text: string }) {
+  const lines = text.split('\n')
+  return (
+    <div className="flex flex-col gap-0.5">
+      {lines.map((ln, i) => {
+        if (ln.trim() === '') return <div key={i} className="h-1.5" />
+        const bullet = /^\s*[-*]\s+/.test(ln)
+        const num = ln.match(/^\s*(\d+)\.\s+/)
+        const head = /^\s*#{1,3}\s+/.test(ln)
+        if (head) return <div key={i} className="font-bold mt-1" style={{ color: 'var(--color-text)' }}>{inline(ln.replace(/^\s*#{1,3}\s+/, ''))}</div>
+        if (bullet) return <div key={i} className="flex gap-2 pl-1"><span style={{ color: 'var(--color-accent)' }}>•</span><span>{inline(ln.replace(/^\s*[-*]\s+/, ''))}</span></div>
+        if (num) return <div key={i} className="flex gap-2 pl-1"><span className="font-semibold" style={{ color: 'var(--color-accent)' }}>{num[1]}.</span><span>{inline(ln.replace(/^\s*\d+\.\s+/, ''))}</span></div>
+        return <div key={i}>{inline(ln)}</div>
+      })}
+    </div>
+  )
+}
+
 export default function Assistant() {
   const [messages, setMessages] = useStore<ChatMessage[]>('ai.chat', [])
   const [input, setInput] = useState('')
@@ -108,14 +136,14 @@ export default function Assistant() {
           {messages.map((m, i) => (
             <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div
-                className="max-w-[80%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap leading-relaxed"
+                className="max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed"
                 style={
                   m.role === 'user'
                     ? { background: 'var(--color-accent)', color: 'var(--color-on-accent)' }
                     : { background: 'var(--color-bg)', color: 'var(--color-text)', border: '1px solid var(--color-border)' }
                 }
               >
-                {m.content}
+                {m.role === 'assistant' ? <Markdown text={m.content} /> : m.content}
               </div>
             </div>
           ))}
@@ -134,10 +162,18 @@ export default function Assistant() {
           <div ref={endRef} />
         </div>
 
+        {messages.length > 0 && !busy && (
+          <div className="flex gap-2 px-4 pt-3 overflow-x-auto" style={{ borderTop: '1px solid var(--color-border)' }}>
+            {SUGGESTIONS.map((s) => (
+              <button key={s} onClick={() => send(s)} className="text-xs whitespace-nowrap px-3 py-1.5 rounded-full shrink-0 transition hover:scale-[1.03]"
+                style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-muted)' }}>{s}</button>
+            ))}
+          </div>
+        )}
         <form
           onSubmit={(e) => { e.preventDefault(); send(input) }}
           className="flex gap-2 p-4"
-          style={{ borderTop: '1px solid var(--color-border)' }}
+          style={messages.length > 0 ? undefined : { borderTop: '1px solid var(--color-border)' }}
         >
           <Input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask a question…" disabled={busy} />
           <Button type="submit" disabled={busy || !input.trim()}>Send</Button>
