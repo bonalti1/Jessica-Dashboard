@@ -86,7 +86,10 @@ These are built with clean integration points so they drop in when ready:
    page (HealthKit export or Garmin Connect API).
 5. **Phone push notifications** — web push / email reminders + a daily
    scheduler, feeding off the existing Notifications list.
-6. **Live product search** for the Wishlist (Amazon/Google Shopping/RapidAPI).
+6. **Live product search** for the Wishlist — ✅ wired via the `product-search`
+   function. Add `RAPIDAPI_KEY` (RapidAPI "Real-Time Product Search") to turn on
+   type-to-search with live prices/ratings; paste-a-link auto-fill and AI
+   pros/cons + "help me decide" already work with no extra key.
 
 ## Privacy
 
