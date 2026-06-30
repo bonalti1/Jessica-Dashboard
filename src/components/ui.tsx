@@ -3,8 +3,13 @@ import type { ButtonHTMLAttributes, CSSProperties, InputHTMLAttributes, ReactNod
 export function Card({ children, className = '', style }: { children: ReactNode; className?: string; style?: CSSProperties }) {
   return (
     <div
-      className={`rounded-2xl shadow-sm ${className}`}
-      style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', ...style }}
+      className={`rounded-[20px] ${className}`}
+      style={{
+        background: 'var(--color-surface)',
+        border: '1px solid var(--color-border)',
+        boxShadow: 'var(--shadow-md)',
+        ...style,
+      }}
     >
       {children}
     </div>
@@ -13,10 +18,10 @@ export function Card({ children, className = '', style }: { children: ReactNode;
 
 export function PageHeader({ title, subtitle, action }: { title: string; subtitle?: string; action?: ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-4 mb-6">
+    <div className="flex items-start justify-between gap-4 mb-7 fade-up">
       <div>
-        <h1 className="text-2xl font-bold" style={{ color: 'var(--color-text)' }}>{title}</h1>
-        {subtitle && <p className="text-sm mt-1" style={{ color: 'var(--color-muted)' }}>{subtitle}</p>}
+        <h1 className="text-[28px] font-semibold leading-tight" style={{ color: 'var(--color-text)' }}>{title}</h1>
+        {subtitle && <p className="text-[15px] mt-1.5" style={{ color: 'var(--color-muted)' }}>{subtitle}</p>}
       </div>
       {action}
     </div>
@@ -26,7 +31,7 @@ export function PageHeader({ title, subtitle, action }: { title: string; subtitl
 type BtnProps = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'solid' | 'ghost' | 'outline' }
 export function Button({ variant = 'solid', className = '', style, ...rest }: BtnProps) {
   const styles: Record<string, React.CSSProperties> = {
-    solid: { background: 'var(--color-accent)', color: '#06352f' },
+    solid: { background: 'var(--color-accent)', color: 'var(--color-on-accent)' },
     ghost: { background: 'transparent', color: 'var(--color-muted)' },
     outline: { background: 'transparent', color: 'var(--color-text)', border: '1px solid var(--color-border)' },
   }
@@ -66,7 +71,7 @@ export function IntegrationNote({ title, children }: { title: string; children: 
       <div className="flex gap-3">
         <div
           className="shrink-0 h-9 w-9 rounded-full grid place-items-center text-sm font-bold"
-          style={{ background: 'var(--color-accent)', color: '#06352f' }}
+          style={{ background: 'var(--color-accent)', color: 'var(--color-on-accent)' }}
         >
           i
         </div>

@@ -25,62 +25,84 @@ const PREFS = [
 function useClock() {
   const [now, setNow] = useState(new Date())
   useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 1000 * 30)
+    const t = setInterval(() => setNow(new Date()), 1000 * 15)
     return () => clearInterval(t)
   }, [])
   return now
 }
 
-function Section({ items }: { items: typeof MENU }) {
+function Section({ items, label }: { items: typeof MENU; label: string }) {
   return (
-    <nav className="flex flex-col gap-1">
-      {items.map(({ to, label, Icon }) => (
-        <NavLink
-          key={to}
-          to={to}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-lg transition"
-          style={({ isActive }) => ({
-            color: isActive ? 'var(--color-accent)' : 'var(--color-sidebar-text)',
-            fontWeight: isActive ? 700 : 500,
-            background: isActive ? 'rgba(255,255,255,0.10)' : 'transparent',
-          })}
-        >
-          {({ isActive }) => (
-            <>
-              <Icon style={{ color: isActive ? 'var(--color-accent)' : 'var(--color-sidebar-text)' }} />
-              <span>{label}</span>
-            </>
-          )}
-        </NavLink>
-      ))}
-    </nav>
+    <div>
+      <div className="text-[11px] font-semibold uppercase tracking-[0.14em] mb-2 px-3 opacity-45">{label}</div>
+      <nav className="flex flex-col gap-0.5">
+        {items.map(({ to, label, Icon }) => (
+          <NavLink
+            key={to}
+            to={to}
+            className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[15px] transition-all duration-200"
+            style={({ isActive }) => ({
+              color: isActive ? 'var(--color-accent)' : 'var(--color-sidebar-text)',
+              fontWeight: isActive ? 600 : 450,
+              background: isActive ? 'color-mix(in srgb, var(--color-accent) 14%, transparent)' : 'transparent',
+            })}
+          >
+            {({ isActive }) => (
+              <>
+                <span
+                  className="transition-transform duration-200 group-hover:scale-110"
+                  style={{ color: isActive ? 'var(--color-accent)' : 'var(--color-sidebar-text)', opacity: isActive ? 1 : 0.75 }}
+                >
+                  <Icon width={20} height={20} />
+                </span>
+                <span>{label}</span>
+              </>
+            )}
+          </NavLink>
+        ))}
+      </nav>
+    </div>
   )
 }
 
 export default function Sidebar() {
   const now = useClock()
-  const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).toUpperCase()
-  const date = `${now.getMonth() + 1}-${now.getDate()}-${String(now.getFullYear()).slice(2)}`
+  const hour = now.getHours() % 12 || 12
+  const minute = String(now.getMinutes()).padStart(2, '0')
+  const ampm = now.getHours() < 12 ? 'AM' : 'PM'
+  const weekday = now.toLocaleDateString([], { weekday: 'long' })
+  const monthDay = now.toLocaleDateString([], { month: 'long', day: 'numeric' })
 
   return (
     <aside
-      className="w-64 shrink-0 h-full overflow-y-auto px-5 py-6 flex flex-col"
-      style={{ background: 'var(--color-sidebar)', color: 'var(--color-sidebar-text)' }}
+      className="w-[270px] shrink-0 h-full overflow-y-auto px-5 py-7 flex flex-col"
+      style={{
+        background: 'linear-gradient(180deg, var(--color-sidebar) 0%, var(--color-sidebar-2) 100%)',
+        color: 'var(--color-sidebar-text)',
+        borderRight: '1px solid color-mix(in srgb, var(--color-sidebar-text) 8%, transparent)',
+      }}
     >
-      <div className="text-sm font-semibold tracking-wide opacity-90">
-        {time}. {date}
+      {/* Elegant clock */}
+      <div className="px-1">
+        <div className="flex items-baseline gap-1.5 tnum">
+          <span className="text-4xl font-light tracking-tight">{hour}:{minute}</span>
+          <span className="text-sm font-medium opacity-60">{ampm}</span>
+        </div>
+        <div className="text-[12px] mt-1 opacity-55 tracking-wide">{weekday}, {monthDay}</div>
       </div>
-      <div className="font-signature text-5xl leading-tight mt-2 mb-8 select-none">
-        Jessica<br />Pena
+
+      {/* Signature */}
+      <div className="font-signature leading-[0.9] mt-7 mb-9 select-none px-1" style={{ fontSize: '52px' }}>
+        Jessica<br />
+        <span style={{ marginLeft: '0.4em' }}>Peña</span>
       </div>
 
-      <div className="text-xl font-bold mb-2">Menu</div>
-      <Section items={MENU} />
+      <div className="flex flex-col gap-6">
+        <Section items={MENU} label="Menu" />
+        <Section items={PREFS} label="Preferences" />
+      </div>
 
-      <div className="text-xl font-bold mt-8 mb-2">Preferences</div>
-      <Section items={PREFS} />
-
-      <div className="mt-auto pt-6 text-xs opacity-50">Made with love 💜</div>
+      <div className="mt-auto pt-8 text-[11px] opacity-35 px-3">Made with love</div>
     </aside>
   )
 }

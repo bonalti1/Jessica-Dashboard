@@ -93,10 +93,10 @@ export default function Calendar() {
                     border: isToday ? '2px solid var(--color-accent)' : '1px solid var(--color-border)',
                   }}
                 >
-                  <span className="text-sm font-semibold" style={{ color: isSel ? '#06352f' : 'var(--color-text)' }}>{d}</span>
+                  <span className="text-sm font-semibold" style={{ color: isSel ? 'var(--color-on-accent)' : 'var(--color-text)' }}>{d}</span>
                   <div className="flex flex-wrap gap-0.5 mt-auto">
                     {evs.slice(0, 3).map((e) => (
-                      <span key={e.id} className="h-1.5 w-1.5 rounded-full" style={{ background: isSel ? '#06352f' : 'var(--color-accent)' }} />
+                      <span key={e.id} className="h-1.5 w-1.5 rounded-full" style={{ background: isSel ? 'var(--color-on-accent)' : 'var(--color-accent)' }} />
                     ))}
                   </div>
                 </button>

@@ -134,7 +134,7 @@ export default function Health() {
           <ul className="flex flex-col gap-2">
             {records.map((r) => (
               <li key={r.id} className="group flex items-start gap-3 p-3 rounded-xl" style={{ background: 'var(--color-bg)' }}>
-                <span className="text-xs font-semibold px-2 py-1 rounded-md shrink-0" style={{ background: 'var(--color-accent)', color: '#06352f' }}>{r.kind}</span>
+                <span className="text-xs font-semibold px-2 py-1 rounded-md shrink-0" style={{ background: 'var(--color-accent)', color: 'var(--color-on-accent)' }}>{r.kind}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold" style={{ color: 'var(--color-text)' }}>{r.title}</span>

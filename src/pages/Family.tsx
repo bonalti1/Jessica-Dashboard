@@ -78,7 +78,7 @@ export default function Family() {
             <ul className="flex flex-col gap-1">
               {members.map((mem) => (
                 <li key={mem.id} className="group flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-black/5">
-                  <div className="h-9 w-9 rounded-full grid place-items-center font-bold shrink-0" style={{ background: 'var(--color-accent)', color: '#06352f' }}>
+                  <div className="h-9 w-9 rounded-full grid place-items-center font-bold shrink-0" style={{ background: 'var(--color-accent)', color: 'var(--color-on-accent)' }}>
                     {mem.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1">

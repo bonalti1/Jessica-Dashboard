@@ -83,7 +83,7 @@ export default function Assistant() {
         <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-3">
           {messages.length === 0 && !busy && (
             <div className="m-auto text-center max-w-md">
-              <div className="mx-auto mb-3 h-14 w-14 rounded-2xl grid place-items-center" style={{ background: 'var(--color-accent)', color: '#06352f' }}>
+              <div className="mx-auto mb-3 h-14 w-14 rounded-2xl grid place-items-center" style={{ background: 'var(--color-accent)', color: 'var(--color-on-accent)' }}>
                 <IconAssistant width={28} height={28} />
               </div>
               <p className="font-semibold mb-1" style={{ color: 'var(--color-text)' }}>Ask me about your dashboard</p>
@@ -111,7 +111,7 @@ export default function Assistant() {
                 className="max-w-[80%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap leading-relaxed"
                 style={
                   m.role === 'user'
-                    ? { background: 'var(--color-accent)', color: '#06352f' }
+                    ? { background: 'var(--color-accent)', color: 'var(--color-on-accent)' }
                     : { background: 'var(--color-bg)', color: 'var(--color-text)', border: '1px solid var(--color-border)' }
                 }
               >

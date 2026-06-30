@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Card, PageHeader, Button, Input } from '../components/ui'
-import { IconPlus, IconTrash, IconCheck } from '../components/icons'
+import { IconPlus, IconTrash } from '../components/icons'
 import { useStore, uid } from '../lib/store'
 
 type Bill = { id: string; name: string; amount: number }
@@ -22,85 +22,96 @@ export default function Payments() {
   const thisYear = new Date().getFullYear()
   const [year, setYear] = useStore<number>('pay.year', thisYear)
   const [bills, setBills] = useStore<Bill[]>('pay.bills', DEFAULT_BILLS)
-  // paid map: key `${year}:${billId}:${monthIndex}` -> true
-  const [paid, setPaid] = useStore<Record<string, boolean>>('pay.paid', {})
-  // income map: key `${year}:${monthIndex}` -> number
+  // Per-cell amount actually paid: key `${year}:${billId}:${monthIndex}` -> number.
+  // Presence of a value means "paid"; the value is how much (can differ each month).
+  const [cells, setCells] = useStore<Record<string, number>>('pay.cells', {})
   const [income, setIncome] = useStore<Record<string, number>>('pay.income', {})
 
   const [newName, setNewName] = useState('')
   const [newAmount, setNewAmount] = useState('')
 
   const key = (billId: string, m: number) => `${year}:${billId}:${m}`
-  const isPaid = (billId: string, m: number) => !!paid[key(billId, m)]
-  const togglePaid = (billId: string, m: number) =>
-    setPaid((prev) => ({ ...prev, [key(billId, m)]: !prev[key(billId, m)] }))
+
+  const setCell = (billId: string, m: number, value: number | null) =>
+    setCells((prev) => {
+      const next = { ...prev }
+      if (value === null || isNaN(value)) delete next[key(billId, m)]
+      else next[key(billId, m)] = value
+      return next
+    })
 
   const addBill = () => {
     const name = newName.trim()
     const amount = parseFloat(newAmount)
-    if (!name || isNaN(amount)) return
-    setBills((prev) => [...prev, { id: uid('b'), name, amount }])
+    if (!name) return
+    setBills((prev) => [...prev, { id: uid('b'), name, amount: isNaN(amount) ? 0 : amount }])
     setNewName(''); setNewAmount('')
   }
   const removeBill = (id: string) => setBills((prev) => prev.filter((b) => b.id !== id))
-  const editAmount = (id: string, amount: number) =>
+  const editBaseAmount = (id: string, amount: number) =>
     setBills((prev) => prev.map((b) => (b.id === id ? { ...b, amount } : b)))
 
-  const totalDue = useMemo(() => bills.reduce((s, b) => s + b.amount, 0), [bills])
+  const expectedMonthly = useMemo(() => bills.reduce((s, b) => s + b.amount, 0), [bills])
 
-  // Per-month paid totals
-  const paidByMonth = useMemo(() => {
-    return MONTHS.map((_, m) => bills.reduce((s, b) => s + (isPaid(b.id, m) ? b.amount : 0), 0))
+  const rowTotal = (billId: string) =>
+    MONTHS.reduce((s, _, m) => s + (cells[key(billId, m)] ?? 0), 0)
+
+  const colTotals = useMemo(
+    () => MONTHS.map((_, m) => bills.reduce((s, b) => s + (cells[key(b.id, m)] ?? 0), 0)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bills, paid, year])
+    [bills, cells, year],
+  )
 
-  const yearPaid = paidByMonth.reduce((s, n) => s + n, 0)
+  const yearPaid = colTotals.reduce((s, n) => s + n, 0)
   const yearIncome = MONTHS.reduce((s, _, m) => s + (income[`${year}:${m}`] ?? 0), 0)
+  const incomeTotal = yearIncome
 
   return (
     <div>
       <PageHeader
         title="Payments"
-        subtitle="Your bills for the whole year. Click any cell to mark it paid."
+        subtitle="Your bills for the whole year. Click a cell to mark it paid, then adjust the amount if it changed that month."
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <Button variant="outline" onClick={() => setYear((y) => y - 1)}>‹</Button>
-            <span className="font-bold text-lg" style={{ color: 'var(--color-text)' }}>{year}</span>
+            <span className="font-semibold text-lg tnum px-1" style={{ color: 'var(--color-text)' }}>{year}</span>
             <Button variant="outline" onClick={() => setYear((y) => y + 1)}>›</Button>
           </div>
         }
       />
 
-      {/* Summary cards */}
-      <div className="grid sm:grid-cols-3 gap-4 mb-6">
+      <div className="grid sm:grid-cols-4 gap-4 mb-6">
         <Card className="p-4">
-          <p className="text-xs uppercase tracking-wide" style={{ color: 'var(--color-muted)' }}>Monthly bills</p>
-          <p className="text-2xl font-bold mt-1" style={{ color: 'var(--color-text)' }}>{money(totalDue)}</p>
+          <p className="text-xs uppercase tracking-wide" style={{ color: 'var(--color-muted)' }}>Expected / month</p>
+          <p className="text-2xl font-semibold mt-1 tnum" style={{ color: 'var(--color-text)' }}>{money(expectedMonthly)}</p>
         </Card>
         <Card className="p-4">
           <p className="text-xs uppercase tracking-wide" style={{ color: 'var(--color-muted)' }}>Paid in {year}</p>
-          <p className="text-2xl font-bold mt-1" style={{ color: 'var(--color-accent)' }}>{money(yearPaid)}</p>
+          <p className="text-2xl font-semibold mt-1 tnum" style={{ color: 'var(--color-accent)' }}>{money(yearPaid)}</p>
         </Card>
         <Card className="p-4">
           <p className="text-xs uppercase tracking-wide" style={{ color: 'var(--color-muted)' }}>Income in {year}</p>
-          <p className="text-2xl font-bold mt-1" style={{ color: 'var(--color-text)' }}>{money(yearIncome)}</p>
-          <p className="text-xs mt-1" style={{ color: 'var(--color-muted)' }}>Net: {money(yearIncome - yearPaid)}</p>
+          <p className="text-2xl font-semibold mt-1 tnum" style={{ color: 'var(--color-text)' }}>{money(incomeTotal)}</p>
+        </Card>
+        <Card className="p-4">
+          <p className="text-xs uppercase tracking-wide" style={{ color: 'var(--color-muted)' }}>Net</p>
+          <p className="text-2xl font-semibold mt-1 tnum" style={{ color: yearIncome - yearPaid >= 0 ? 'var(--color-accent)' : '#e08a8a' }}>
+            {money(yearIncome - yearPaid)}
+          </p>
         </Card>
       </div>
 
-      {/* The grid */}
       <Card className="p-0 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-sm">
+          <table className="w-full border-collapse text-sm tnum">
             <thead>
               <tr style={{ background: 'var(--color-bg)' }}>
-                <th className="sticky left-0 z-10 text-left px-4 py-3 font-semibold" style={{ background: 'var(--color-bg)', color: 'var(--color-text)', minWidth: 180 }}>
-                  Bill
-                </th>
-                <th className="px-3 py-3 font-semibold text-right" style={{ color: 'var(--color-muted)', minWidth: 90 }}>Amount</th>
+                <th className="sticky left-0 z-10 text-left px-4 py-3 font-semibold" style={{ background: 'var(--color-bg)', color: 'var(--color-text)', minWidth: 170 }}>Bill</th>
+                <th className="px-3 py-3 font-medium text-right" style={{ color: 'var(--color-muted)', minWidth: 80 }}>Expected</th>
                 {MONTHS.map((m) => (
-                  <th key={m} className="px-2 py-3 font-semibold text-center" style={{ color: 'var(--color-muted)', minWidth: 52 }}>{m}</th>
+                  <th key={m} className="px-2 py-3 font-medium text-center" style={{ color: 'var(--color-muted)', minWidth: 58 }}>{m}</th>
                 ))}
+                <th className="px-3 py-3 font-semibold text-right sticky right-0 z-10" style={{ background: 'var(--color-bg)', color: 'var(--color-text)', minWidth: 90 }}>Total</th>
               </tr>
             </thead>
             <tbody>
@@ -108,8 +119,13 @@ export default function Payments() {
                 <tr key={b.id} className="group" style={{ borderTop: '1px solid var(--color-border)' }}>
                   <td className="sticky left-0 z-10 px-4 py-2" style={{ background: 'var(--color-surface)' }}>
                     <div className="flex items-center gap-2">
-                      <span className="font-medium" style={{ color: 'var(--color-text)' }}>{b.name}</span>
-                      <button onClick={() => removeBill(b.id)} className="opacity-0 group-hover:opacity-60" style={{ color: 'var(--color-muted)' }}>
+                      <input
+                        value={b.name}
+                        onChange={(e) => setBills((prev) => prev.map((x) => x.id === b.id ? { ...x, name: e.target.value } : x))}
+                        className="font-medium bg-transparent outline-none w-full"
+                        style={{ color: 'var(--color-text)' }}
+                      />
+                      <button onClick={() => removeBill(b.id)} className="opacity-0 group-hover:opacity-60 shrink-0" style={{ color: 'var(--color-muted)' }}>
                         <IconTrash width={14} height={14} />
                       </button>
                     </div>
@@ -117,84 +133,96 @@ export default function Payments() {
                   <td className="px-3 py-2 text-right">
                     <input
                       type="number"
-                      value={b.amount}
-                      onChange={(e) => editAmount(b.id, parseFloat(e.target.value) || 0)}
-                      className="w-20 text-right rounded-md px-2 py-1 bg-transparent outline-none"
-                      style={{ color: 'var(--color-text)', border: '1px solid transparent' }}
-                      onFocus={(e) => (e.target.style.border = '1px solid var(--color-border)')}
-                      onBlur={(e) => (e.target.style.border = '1px solid transparent')}
+                      value={b.amount || ''}
+                      placeholder="0"
+                      onChange={(e) => editBaseAmount(b.id, parseFloat(e.target.value) || 0)}
+                      className="w-16 text-right rounded-md px-1.5 py-1 bg-transparent outline-none"
+                      style={{ color: 'var(--color-muted)' }}
                     />
                   </td>
                   {MONTHS.map((_, m) => {
-                    const on = isPaid(b.id, m)
+                    const val = cells[key(b.id, m)]
+                    const paid = val !== undefined
                     return (
                       <td key={m} className="px-1 py-1 text-center">
-                        <button
-                          onClick={() => togglePaid(b.id, m)}
-                          title={on ? 'Paid' : 'Mark paid'}
-                          className="h-8 w-8 rounded-lg grid place-items-center mx-auto transition"
-                          style={{
-                            background: on ? 'var(--color-accent)' : 'var(--color-bg)',
-                            border: '1px solid var(--color-border)',
+                        <input
+                          type="number"
+                          value={val ?? ''}
+                          placeholder={String(b.amount || '')}
+                          onFocus={(e) => {
+                            // First click on an empty cell marks it paid at the expected amount.
+                            if (val === undefined && b.amount) {
+                              setCell(b.id, m, b.amount)
+                              requestAnimationFrame(() => e.target.select())
+                            }
                           }}
-                        >
-                          {on && <IconCheck width={15} height={15} style={{ color: '#06352f' }} />}
-                        </button>
+                          onChange={(e) => setCell(b.id, m, e.target.value === '' ? null : parseFloat(e.target.value))}
+                          title={paid ? 'Paid — edit the amount, or clear to undo' : 'Click to mark paid'}
+                          className="h-8 w-14 text-center rounded-lg outline-none transition-colors"
+                          style={{
+                            background: paid ? 'color-mix(in srgb, var(--color-accent) 22%, transparent)' : 'var(--color-bg)',
+                            border: `1px solid ${paid ? 'color-mix(in srgb, var(--color-accent) 45%, transparent)' : 'var(--color-border)'}`,
+                            color: paid ? 'var(--color-text)' : 'var(--color-muted)',
+                            fontWeight: paid ? 600 : 400,
+                          }}
+                        />
                       </td>
                     )
                   })}
+                  <td className="px-3 py-2 text-right font-semibold sticky right-0 z-10" style={{ background: 'var(--color-surface)', color: 'var(--color-text)' }}>
+                    {money(rowTotal(b.id))}
+                  </td>
                 </tr>
               ))}
 
               {/* Income row */}
               <tr style={{ borderTop: '2px solid var(--color-border)', background: 'var(--color-bg)' }}>
-                <td className="sticky left-0 z-10 px-4 py-2 font-semibold" style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }}>
-                  Income
-                </td>
+                <td className="sticky left-0 z-10 px-4 py-2 font-semibold" style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }}>Income</td>
                 <td />
                 {MONTHS.map((_, m) => (
-                  <td key={m} className="px-1 py-1">
+                  <td key={m} className="px-1 py-1 text-center">
                     <input
                       type="number"
                       value={income[`${year}:${m}`] ?? ''}
                       placeholder="0"
-                      onChange={(e) =>
-                        setIncome((prev) => ({ ...prev, [`${year}:${m}`]: parseFloat(e.target.value) || 0 }))
-                      }
-                      className="w-12 text-center rounded-md py-1 bg-transparent outline-none text-xs"
+                      onChange={(e) => setIncome((prev) => {
+                        const next = { ...prev }
+                        if (e.target.value === '') delete next[`${year}:${m}`]
+                        else next[`${year}:${m}`] = parseFloat(e.target.value) || 0
+                        return next
+                      })}
+                      className="h-8 w-14 text-center rounded-lg outline-none bg-transparent text-xs"
                       style={{ color: 'var(--color-text)' }}
                     />
                   </td>
                 ))}
+                <td className="px-3 py-2 text-right font-semibold sticky right-0 z-10" style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }}>{money(yearIncome)}</td>
               </tr>
 
-              {/* Paid total row */}
+              {/* Column totals */}
               <tr style={{ borderTop: '1px solid var(--color-border)' }}>
-                <td className="sticky left-0 z-10 px-4 py-3 font-semibold" style={{ background: 'var(--color-surface)', color: 'var(--color-text)' }}>
-                  Paid / month
-                </td>
+                <td className="sticky left-0 z-10 px-4 py-3 font-semibold" style={{ background: 'var(--color-surface)', color: 'var(--color-text)' }}>Total paid</td>
                 <td />
-                {paidByMonth.map((amt, m) => (
+                {colTotals.map((amt, m) => (
                   <td key={m} className="px-1 py-3 text-center text-xs font-semibold" style={{ color: amt > 0 ? 'var(--color-accent)' : 'var(--color-muted)' }}>
                     {amt > 0 ? money(amt) : '—'}
                   </td>
                 ))}
+                <td className="px-3 py-3 text-right font-bold sticky right-0 z-10" style={{ background: 'var(--color-surface)', color: 'var(--color-accent)' }}>{money(yearPaid)}</td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        {/* Add bill */}
-        <div className="flex items-center gap-2 p-4" style={{ borderTop: '1px solid var(--color-border)' }}>
+        <div className="flex flex-wrap items-center gap-2 p-4" style={{ borderTop: '1px solid var(--color-border)' }}>
           <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="New bill name" className="max-w-xs" />
-          <Input value={newAmount} onChange={(e) => setNewAmount(e.target.value)} placeholder="Amount" type="number" className="max-w-[120px]" />
+          <Input value={newAmount} onChange={(e) => setNewAmount(e.target.value)} placeholder="Expected amount" type="number" className="max-w-[150px]" />
           <Button onClick={addBill}><IconPlus width={16} height={16} /> Add bill</Button>
         </div>
       </Card>
 
       <p className="text-xs mt-3" style={{ color: 'var(--color-muted)' }}>
-        Tip: edit any amount inline, type income per month, and click cells to track what's paid.
-        Everything saves automatically.
+        Click a month cell to mark a bill paid — it fills the expected amount, which you can edit if it changed that month. Clear a cell to undo. Row totals (right) show what you paid per bill; the bottom row shows each month's total.
       </p>
     </div>
   )

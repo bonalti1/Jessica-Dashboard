@@ -80,7 +80,7 @@ export default function Tasks() {
                     }}
                     aria-label="toggle"
                   >
-                    {t.done && <IconCheck width={13} height={13} style={{ color: '#06352f' }} />}
+                    {t.done && <IconCheck width={13} height={13} style={{ color: 'var(--color-on-accent)' }} />}
                   </button>
                   <span
                     className="flex-1 text-sm"
@@ -119,7 +119,7 @@ export default function Tasks() {
                   <button
                     onClick={() => promote(d)}
                     className="text-xs font-semibold px-2 py-1 rounded-md opacity-0 group-hover:opacity-100"
-                    style={{ background: 'var(--color-accent)', color: '#06352f' }}
+                    style={{ background: 'var(--color-accent)', color: 'var(--color-on-accent)' }}
                   >
                     → Task
                   </button>

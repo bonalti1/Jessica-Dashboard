@@ -76,7 +76,7 @@ export default function Notifications() {
           <ul className="flex flex-col gap-2">
             {reminders.map((r, i) => (
               <li key={i} className="flex items-center gap-3 p-3 rounded-xl" style={{ background: 'var(--color-bg)' }}>
-                <div className="h-9 w-9 rounded-full grid place-items-center shrink-0" style={{ background: 'var(--color-accent)', color: '#06352f' }}>
+                <div className="h-9 w-9 rounded-full grid place-items-center shrink-0" style={{ background: 'var(--color-accent)', color: 'var(--color-on-accent)' }}>
                   <IconBell width={16} height={16} />
                 </div>
                 <div className="flex-1">

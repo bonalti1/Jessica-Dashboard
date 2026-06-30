@@ -2,7 +2,8 @@ import { Card, PageHeader, Button } from '../components/ui'
 import { useTheme, PRESETS, type Theme } from '../lib/theme'
 
 const FIELDS: { key: keyof Theme; label: string }[] = [
-  { key: 'sidebar', label: 'Sidebar' },
+  { key: 'sidebar', label: 'Sidebar (top)' },
+  { key: 'sidebar2', label: 'Sidebar (bottom)' },
   { key: 'accent', label: 'Accent / highlight' },
   { key: 'bg', label: 'Background' },
   { key: 'surface', label: 'Cards' },
@@ -59,7 +60,7 @@ export default function Settings() {
               </label>
             ))}
           </div>
-          <Button variant="outline" className="mt-5" onClick={() => applyPreset('Lavender')}>Reset to default</Button>
+          <Button variant="outline" className="mt-5" onClick={() => applyPreset('Noir Lavender')}>Reset to default</Button>
         </Card>
       </div>
 
