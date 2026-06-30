@@ -71,7 +71,7 @@ const FIELDS: { key: keyof Theme; label: string }[] = [
 
 export default function Settings() {
   const { theme, setTheme, applyPreset } = useTheme()
-  const [profile, setProfile] = useStore<{ name: string; photo?: string }>('profile', { name: 'Jessica' })
+  const [profile, setProfile] = useStore<{ name: string; photo?: string; photoInSidebar?: boolean }>('profile', { name: 'Jessica' })
   const [currency, setCurrency] = useStore<string>('currency', 'USD')
 
   const setField = (key: keyof Theme, value: string) => setTheme({ ...theme, [key]: value })
@@ -100,7 +100,22 @@ export default function Settings() {
           <div className="flex-1 min-w-[200px]">
             <label className="text-sm block mb-1" style={{ color: 'var(--color-muted)' }}>Name (greeting + signature)</label>
             <Input value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} placeholder="Jessica Peña" className="max-w-sm" />
-            {profile.photo && <button onClick={() => setProfile({ ...profile, photo: undefined })} className="text-xs mt-2" style={{ color: 'var(--color-muted)' }}>Remove photo</button>}
+            {profile.photo && (
+              <div className="flex flex-wrap items-center gap-2 mt-3">
+                <button
+                  onClick={() => setProfile({ ...profile, photoInSidebar: !profile.photoInSidebar })}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-full transition"
+                  style={profile.photoInSidebar
+                    ? { background: 'var(--color-accent)', color: 'var(--color-on-accent)' }
+                    : { background: 'var(--color-bg)', color: 'var(--color-text)', border: '1px solid var(--color-border)' }}>
+                  {profile.photoInSidebar ? '✓ Shown in sidebar' : 'Add to sidebar'}
+                </button>
+                <button onClick={() => setProfile({ ...profile, photo: undefined, photoInSidebar: false })} className="text-xs font-semibold px-3 py-1.5 rounded-full" style={{ background: 'var(--color-bg)', color: '#d97a7a', border: '1px solid var(--color-border)' }}>
+                  Delete photo
+                </button>
+              </div>
+            )}
+            <p className="text-xs mt-2" style={{ color: 'var(--color-muted)' }}>Add a selfie and show it in the sidebar if you like 💜</p>
           </div>
           <div>
             <label className="text-sm block mb-1" style={{ color: 'var(--color-muted)' }}>Currency</label>

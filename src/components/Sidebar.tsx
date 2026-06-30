@@ -33,11 +33,11 @@ function useClock() {
   return now
 }
 
-function Section({ items, label, onNavigate }: { items: typeof MENU; label: string; onNavigate?: () => void }) {
+function Section({ items, label, onNavigate, spread }: { items: typeof MENU; label: string; onNavigate?: () => void; spread?: boolean }) {
   return (
-    <div>
+    <div className={spread ? 'flex-1 flex flex-col min-h-0' : ''}>
       <div className="text-[10px] font-semibold uppercase tracking-[0.14em] mb-1 px-3 opacity-45">{label}</div>
-      <nav className="flex flex-col gap-0.5">
+      <nav className={`flex flex-col ${spread ? 'flex-1 justify-between py-0.5' : 'gap-0.5'}`}>
         {items.map(({ to, label, Icon }) => (
           <NavLink
             key={to}
@@ -68,7 +68,8 @@ function Section({ items, label, onNavigate }: { items: typeof MENU; label: stri
 
 export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const now = useClock()
-  const [profile] = useStore<{ name: string }>('profile', { name: 'Jessica' })
+  const [profile] = useStore<{ name: string; photo?: string; photoInSidebar?: boolean }>('profile', { name: 'Jessica' })
+  const showPhoto = profile.photo && profile.photoInSidebar
   const hour = now.getHours() % 12 || 12
   const minute = String(now.getMinutes()).padStart(2, '0')
   const ampm = now.getHours() < 12 ? 'AM' : 'PM'
@@ -85,25 +86,30 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         borderRight: '1px solid color-mix(in srgb, var(--color-sidebar-text) 8%, transparent)',
       }}
     >
-      <div className="px-1">
-        <div className="flex items-baseline gap-1.5 tnum">
-          <span className="text-[28px] leading-none font-light tracking-tight">{hour}:{minute}</span>
-          <span className="text-xs font-medium opacity-60">{ampm}</span>
-          <span className="text-[11px] ml-auto opacity-55 tracking-wide self-center">{weekday}, {monthDay}</span>
+      <div className="px-1 flex items-center gap-3">
+        {showPhoto && <img src={profile.photo} alt="" className="h-11 w-11 rounded-full object-cover shrink-0" style={{ border: '2px solid color-mix(in srgb, var(--color-accent) 60%, transparent)' }} />}
+        <div className="min-w-0">
+          <div className="flex items-baseline gap-1.5 tnum">
+            <span className="text-[26px] leading-none font-light tracking-tight">{hour}:{minute}</span>
+            <span className="text-xs font-medium opacity-60">{ampm}</span>
+          </div>
+          <div className="text-[11px] mt-0.5 opacity-55 tracking-wide">{weekday}, {monthDay}</div>
         </div>
       </div>
 
-      <div className="font-signature leading-[0.95] mt-3 mb-5 select-none px-1" style={{ fontSize: rest.length ? '38px' : '42px' }}>
+      <div className="font-signature leading-[0.95] mt-3 mb-4 select-none px-1" style={{ fontSize: rest.length ? '36px' : '40px' }}>
         {first}{rest.length > 0 && <><br /><span style={{ marginLeft: '0.4em' }}>{rest.join(' ')}</span></>}
       </div>
 
-      {/* Nav fills the remaining height: Menu at the top, Preferences anchored low. */}
-      <div className="flex-1 flex flex-col justify-between min-h-0 gap-4">
-        <Section items={MENU} label="Menu" onNavigate={onNavigate} />
-        <Section items={PREFS} label="Preferences" onNavigate={onNavigate} />
+      {/* Nav fills the remaining height: Menu spreads evenly, Preferences anchored at the bottom. */}
+      <div className="flex-1 flex flex-col min-h-0">
+        <Section items={MENU} label="Menu" onNavigate={onNavigate} spread />
+        <div className="mt-3">
+          <Section items={PREFS} label="Preferences" onNavigate={onNavigate} />
+        </div>
       </div>
 
-      <div className="pt-4 text-[11px] opacity-30 px-3 shrink-0">Made with love 💜</div>
+      <div className="pt-3 text-[11px] opacity-30 px-3 shrink-0">Made with love 💜</div>
     </aside>
   )
 }

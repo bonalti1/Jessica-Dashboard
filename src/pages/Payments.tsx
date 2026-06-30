@@ -222,22 +222,28 @@ export default function Payments() {
       </div>
 
       {/* Spend chart */}
-      {yearPaid > 0 && (
-        <Card className="p-5 mb-6">
-          <p className="text-xs uppercase tracking-wide mb-3" style={{ color: 'var(--color-muted)' }}>Paid each month · {year}</p>
-          <div className="flex items-end gap-1.5" style={{ height: 120 }}>
-            {colTotals.map((v, m) => {
-              const max = Math.max(...colTotals, 1)
-              return (
-                <div key={m} className="flex-1 flex flex-col items-center gap-1 cursor-pointer" onClick={() => { setView('month'); setViewMonth(m) }}>
-                  <div className="w-full rounded-t-md transition-all" style={{ height: `${(v / max) * 90}px`, minHeight: v > 0 ? 4 : 0, background: m === new Date().getMonth() ? 'var(--color-accent)' : 'color-mix(in srgb, var(--color-accent) 45%, transparent)' }} title={money(v)} />
+      {yearPaid > 0 && (() => {
+        const max = Math.max(...colTotals, 1)
+        const compact = (v: number) => v >= 1000 ? `$${(v / 1000).toFixed(v >= 10000 ? 0 : 1)}k` : `$${Math.round(v)}`
+        const avg = yearPaid / colTotals.filter((v) => v > 0).length
+        return (
+          <Card className="p-5 mb-6">
+            <div className="flex items-baseline justify-between mb-3">
+              <p className="text-xs uppercase tracking-wide" style={{ color: 'var(--color-muted)' }}>Paid each month · {year}</p>
+              <p className="text-sm" style={{ color: 'var(--color-muted)' }}>Total <span className="font-semibold tnum" style={{ color: 'var(--color-accent)' }}>{money(yearPaid)}</span> · avg <span className="font-semibold tnum" style={{ color: 'var(--color-text)' }}>{money(avg || 0)}</span>/mo</p>
+            </div>
+            <div className="flex gap-1.5" style={{ height: 150 }}>
+              {colTotals.map((v, m) => (
+                <div key={m} className="flex-1 flex flex-col items-center justify-end gap-1 cursor-pointer h-full" onClick={() => { setView('month'); setViewMonth(m) }} title={money(v)}>
+                  <span className="text-[9px] tnum font-semibold" style={{ color: v > 0 ? 'var(--color-text)' : 'transparent' }}>{v > 0 ? compact(v) : '·'}</span>
+                  <div className="w-full rounded-t-md transition-all" style={{ height: `${(v / max) * 96}px`, minHeight: v > 0 ? 4 : 0, background: m === new Date().getMonth() ? 'var(--color-accent)' : 'color-mix(in srgb, var(--color-accent) 45%, transparent)' }} />
                   <span className="text-[10px]" style={{ color: 'var(--color-muted)' }}>{MONTHS[m]}</span>
                 </div>
-              )
-            })}
-          </div>
-        </Card>
-      )}
+              ))}
+            </div>
+          </Card>
+        )
+      })()}
 
       {view === 'month' && (
         <Card className="p-5 mb-6">

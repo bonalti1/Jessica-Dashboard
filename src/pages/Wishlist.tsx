@@ -152,6 +152,21 @@ export default function Wishlist() {
     const c = { id: uid('col'), name }
     setCollections((prev) => [...prev, c]); setActiveCol(c.id)
   }
+
+  const loadDemo = () => {
+    const thumb = (label: string, color: string) =>
+      'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='320' height='200'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='${color}'/><stop offset='1' stop-color='#ffffff' stop-opacity='0.25'/></linearGradient></defs><rect width='320' height='200' fill='url(#g)'/><text x='160' y='112' font-size='26' fill='white' font-family='Georgia, serif' text-anchor='middle'>${label}</text></svg>`)
+    const cid = uid('col')
+    const demo: Product[] = [
+      { id: uid('p'), collectionId: cid, name: 'Dyson V15 Detect', price: '$649', rating: 5, reviews: 3200, link: 'https://www.dyson.com', image: thumb('Dyson V15', '#7c6fb5'), notes: 'Best suction, laser dust detection. Pricey but top reviews.', status: 'Want', priority: 'High', targetPrice: '$549', source: 'dyson.com', priceHistory: [{ d: '2026-05-01', p: 699 }, { d: '2026-06-15', p: 649 }] },
+      { id: uid('p'), collectionId: cid, name: 'Shark Stratos', price: '$399', rating: 4, reviews: 1800, link: '', image: thumb('Shark Stratos', '#5b8bb0'), notes: 'Great value, odor neutralizer. Heavier than Dyson.', status: 'Researching', priority: 'Medium' },
+      { id: uid('p'), collectionId: cid, name: 'Tineco Pure One S15', price: '$499', rating: 4, reviews: 720, link: '', image: thumb('Tineco S15', '#5fa98f'), notes: 'Smart sensor, app control. Smaller brand.', status: 'Researching', priority: 'Low' },
+      { id: uid('p'), collectionId: cid, name: 'Roborock Q5 (robot)', price: '$299', rating: 4, reviews: 2400, link: '', image: thumb('Roborock Q5', '#c08bb0'), notes: 'Hands-free robot. Different category — for daily upkeep.', status: 'Researching', priority: 'Medium', targetPrice: '$259' },
+    ]
+    setCollections((prev) => [...prev, { id: cid, name: '✨ Vacuum demo' }])
+    setItems((prev) => [...demo, ...prev])
+    setActiveCol(cid)
+  }
   const renameCollection = () => {
     const cur = collections.find((c) => c.id === activeCol)
     const name = window.prompt('Rename list', cur?.name)?.trim()
@@ -193,6 +208,7 @@ export default function Wishlist() {
           </button>
         ))}
         <button onClick={addCollection} className="px-3 py-1.5 rounded-full text-sm" style={{ color: 'var(--color-muted)', border: '1px dashed var(--color-border)' }}>＋ List</button>
+        <button onClick={loadDemo} className="px-3 py-1.5 rounded-full text-sm font-semibold" style={{ color: 'var(--color-accent)', border: '1px solid color-mix(in srgb, var(--color-accent) 45%, transparent)' }}>✨ Load example</button>
         <div className="ml-auto flex items-center gap-2">
           {colItems.some((p) => priceNumber(p.price) != null) && (
             <span className="text-sm font-semibold tnum" style={{ color: 'var(--color-text)' }}>
@@ -211,7 +227,10 @@ export default function Wishlist() {
       </div>
 
       {colItems.length === 0 ? (
-        <EmptyState icon={<IconWishlist width={44} height={44} />} title="Nothing here yet" hint="Paste a product link to auto-fill it, or type a name to search." />
+        <div className="flex flex-col items-center">
+          <EmptyState icon={<IconWishlist width={44} height={44} />} title="Nothing here yet" hint="Paste a product link to auto-fill it, type a name to search, or load an example to see how comparing works." />
+          <Button onClick={loadDemo}>✨ Load example comparison</Button>
+        </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {colItems.map((p) => {
