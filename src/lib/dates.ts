@@ -37,6 +37,39 @@ const startOfToday = () => {
   return new Date(n.getFullYear(), n.getMonth(), n.getDate())
 }
 
+/** Local YYYY-MM-DD (no timezone shift). */
+export function toISO(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+export function addDays(d: Date, n: number): Date {
+  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  x.setDate(x.getDate() + n)
+  return x
+}
+
+/** Monday of the week containing d. */
+export function startOfWeek(d: Date): Date {
+  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  const day = (x.getDay() + 6) % 7 // Mon=0 … Sun=6
+  return addDays(x, -day)
+}
+
+export function todayISO(): string {
+  return toISO(startOfToday())
+}
+
+/** "Jun 29" */
+export function formatDayShort(d: Date): string {
+  return `${monthShort(d)} ${d.getDate()}`
+}
+
+/** "Jun 29 – Jul 5" (range from a Monday across 7 days). */
+export function formatWeekRange(monday: Date): string {
+  const end = addDays(monday, 6)
+  return `${formatDayShort(monday)} – ${formatDayShort(end)}`
+}
+
 /** Negative = overdue, 0 = today, positive = days away, null = no/invalid date. */
 export function daysUntil(s: string): number | null {
   const d = parseDate(s)
