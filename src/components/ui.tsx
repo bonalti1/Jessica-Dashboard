@@ -18,12 +18,12 @@ export function Card({ children, className = '', style }: { children: ReactNode;
 
 export function PageHeader({ title, subtitle, action }: { title: string; subtitle?: string; action?: ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-4 mb-7 fade-up">
+    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 mb-6 sm:mb-7 fade-up">
       <div>
-        <h1 className="text-[28px] font-semibold leading-tight" style={{ color: 'var(--color-text)' }}>{title}</h1>
-        {subtitle && <p className="text-[15px] mt-1.5" style={{ color: 'var(--color-muted)' }}>{subtitle}</p>}
+        <h1 className="text-2xl sm:text-[28px] font-semibold leading-tight" style={{ color: 'var(--color-text)' }}>{title}</h1>
+        {subtitle && <p className="text-sm sm:text-[15px] mt-1 sm:mt-1.5" style={{ color: 'var(--color-muted)' }}>{subtitle}</p>}
       </div>
-      {action}
+      {action && <div className="shrink-0 flex flex-wrap items-center gap-2">{action}</div>}
     </div>
   )
 }

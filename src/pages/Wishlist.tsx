@@ -186,10 +186,10 @@ export default function Wishlist() {
         title="Wishlist"
         subtitle="Research products side by side — paste a link or search, compare, and let AI help you decide."
         action={
-          <form onSubmit={(e) => { e.preventDefault(); handleAdd() }} className="flex gap-2">
-            <div className="relative">
+          <form onSubmit={(e) => { e.preventDefault(); handleAdd() }} className="flex gap-2 w-full sm:w-auto">
+            <div className="relative flex-1 sm:flex-none">
               <IconSearch width={16} height={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-muted)' }} />
-              <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Paste a link or search a product…" className="!pl-9 w-80" />
+              <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Paste a link or search…" className="!pl-9 w-full sm:w-72" />
             </div>
             <Button type="submit" disabled={adding}><IconPlus width={16} height={16} /> Add</Button>
           </form>

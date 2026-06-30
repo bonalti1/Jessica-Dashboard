@@ -96,7 +96,7 @@ export default function Payments() {
   const { removeWithUndo, toast } = useToast()
   const [newName, setNewName] = useState('')
   const [newAmount, setNewAmount] = useState('')
-  const [view, setView] = useState<'year' | 'month'>('year')
+  const [view, setView] = useState<'year' | 'month'>(() => (typeof window !== 'undefined' && window.innerWidth < 640 ? 'month' : 'year'))
   const [viewMonth, setViewMonth] = useState<number>(new Date().getMonth())
 
   const key = (billId: string, m: number) => `${year}:${billId}:${m}`
@@ -185,7 +185,7 @@ export default function Payments() {
         }
       />
 
-      <div className="grid sm:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
         <Card className="p-4">
           <p className="text-xs uppercase tracking-wide" style={{ color: 'var(--color-muted)' }}>Expected / month</p>
           <p className="text-2xl font-semibold mt-1 tnum" style={{ color: 'var(--color-text)' }}>{money(expectedMonthly)}</p>
