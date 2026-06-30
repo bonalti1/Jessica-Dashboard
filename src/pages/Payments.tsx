@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import { Card, PageHeader, Button, Input } from '../components/ui'
 import { IconPlus, IconTrash } from '../components/icons'
 import { useStore, uid } from '../lib/store'
+import { useToast } from '../lib/toast'
 
 type Bill = { id: string; name: string; amount: number }
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -94,6 +95,7 @@ export default function Payments() {
   const [cells, setCells] = useStore<Record<string, number>>('pay.cells', {})
   const [income, setIncome] = useStore<Record<string, number>>('pay.income', {})
 
+  const { removeWithUndo } = useToast()
   const [newName, setNewName] = useState('')
   const [newAmount, setNewAmount] = useState('')
 
@@ -114,7 +116,16 @@ export default function Payments() {
     setBills((prev) => [...prev, { id: uid('b'), name, amount: isNaN(amount) ? 0 : amount }])
     setNewName(''); setNewAmount('')
   }
-  const removeBill = (id: string) => setBills((prev) => prev.filter((b) => b.id !== id))
+  const removeBill = (id: string) => {
+    const bill = bills.find((b) => b.id === id)
+    if (!bill) return
+    const idx = bills.findIndex((b) => b.id === id)
+    removeWithUndo(
+      `${bill.name} removed`,
+      () => setBills((prev) => prev.filter((b) => b.id !== id)),
+      () => setBills((prev) => { const next = [...prev]; next.splice(idx, 0, bill); return next }),
+    )
+  }
   const editBaseAmount = (id: string, amount: number) =>
     setBills((prev) => prev.map((b) => (b.id === id ? { ...b, amount } : b)))
 

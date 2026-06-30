@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import { Card, PageHeader, Button, Input, EmptyState } from '../components/ui'
 import { IconPlus, IconTrash, IconCheck, IconTasks } from '../components/icons'
 import { useStore, uid } from '../lib/store'
+import { useToast } from '../lib/toast'
 import { formatDueLabel, daysUntil } from '../lib/dates'
 
 type Task = { id: string; text: string; done: boolean; created: number; due?: string }
@@ -38,6 +39,7 @@ function DuePill({ value, onChange }: { value?: string; onChange: (v: string | u
 export default function Tasks() {
   const [tasks, setTasks] = useStore<Task[]>('tasks.master', [])
   const [dump, setDump] = useStore<Task[]>('tasks.dump', [])
+  const { removeWithUndo } = useToast()
   const [draft, setDraft] = useState('')
   const [draftDue, setDraftDue] = useState('')
   const [dumpDraft, setDumpDraft] = useState('')
@@ -60,7 +62,11 @@ export default function Tasks() {
     setTasks((prev) => prev.map((x) => (x.id === id ? { ...x, done: !x.done } : x)))
   const setDue = (id: string, due: string | undefined) =>
     setTasks((prev) => prev.map((x) => (x.id === id ? { ...x, due } : x)))
-  const removeTask = (id: string) => setTasks((prev) => prev.filter((x) => x.id !== id))
+  const removeTask = (id: string) => {
+    const t = tasks.find((x) => x.id === id)
+    if (!t) return
+    removeWithUndo('Task deleted', () => setTasks((prev) => prev.filter((x) => x.id !== id)), () => setTasks((prev) => [t, ...prev]))
+  }
   const removeDump = (id: string) => setDump((prev) => prev.filter((x) => x.id !== id))
 
   const promote = (item: Task) => {

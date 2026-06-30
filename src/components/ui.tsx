@@ -54,6 +54,13 @@ export function Input({ className = '', ...rest }: InputHTMLAttributes<HTMLInput
   )
 }
 
+export function Skeleton({ className = '', style }: { className?: string; style?: CSSProperties }) {
+  return (
+    <div className={`rounded-lg animate-pulse ${className}`}
+      style={{ background: 'color-mix(in srgb, var(--color-muted) 18%, var(--color-bg))', ...style }} />
+  )
+}
+
 export function EmptyState({ icon, title, hint }: { icon?: ReactNode; title: string; hint?: string }) {
   return (
     <div className="flex flex-col items-center justify-center text-center py-16" style={{ color: 'var(--color-muted)' }}>

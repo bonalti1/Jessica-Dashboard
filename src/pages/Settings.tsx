@@ -1,5 +1,6 @@
-import { Card, PageHeader, Button } from '../components/ui'
+import { Card, PageHeader, Button, Input } from '../components/ui'
 import { useTheme, PRESETS, type Theme } from '../lib/theme'
+import { useStore } from '../lib/store'
 
 const FIELDS: { key: keyof Theme; label: string }[] = [
   { key: 'sidebar', label: 'Sidebar (top)' },
@@ -13,12 +14,20 @@ const FIELDS: { key: keyof Theme; label: string }[] = [
 
 export default function Settings() {
   const { theme, setTheme, applyPreset } = useTheme()
+  const [profile, setProfile] = useStore<{ name: string }>('profile', { name: 'Jessica' })
 
   const setField = (key: keyof Theme, value: string) => setTheme({ ...theme, [key]: value })
 
   return (
     <div>
       <PageHeader title="Settings" subtitle="Make the dashboard yours — pick a palette or fine-tune every color." />
+
+      <Card className="p-5 mb-6">
+        <h2 className="font-bold text-lg mb-3" style={{ color: 'var(--color-text)' }}>Profile</h2>
+        <label className="text-sm block mb-1" style={{ color: 'var(--color-muted)' }}>Name (used in the greeting and signature)</label>
+        <Input value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} placeholder="Jessica Peña" className="max-w-sm" />
+        <p className="text-xs mt-2" style={{ color: 'var(--color-muted)' }}>Tip: include a last name (e.g. “Jessica Peña”) to show it on two lines in the sidebar signature.</p>
+      </Card>
 
       <div className="grid md:grid-cols-2 gap-6">
         <Card className="p-5">

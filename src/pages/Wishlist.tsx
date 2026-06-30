@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Card, PageHeader, Button, Input, EmptyState } from '../components/ui'
+import { Card, PageHeader, Button, Input, EmptyState, Skeleton } from '../components/ui'
 import { IconPlus, IconTrash, IconSearch, IconWishlist, IconAssistant } from '../components/icons'
 import { useStore, uid } from '../lib/store'
+import { useToast } from '../lib/toast'
 import {
   unfurl, searchProducts, aiProsCons, aiDecide, priceNumber,
   type Product, type Collection, type Status, type Priority, type SearchResult,
@@ -28,6 +29,7 @@ export default function Wishlist() {
   const [collections, setCollections] = useStore<Collection[]>('wishlist.collections', [DEFAULT_COLLECTION])
   const [items, setItems] = useStore<Product[]>('wishlist.items', [])
   const [migrated, setMigrated] = useStore<boolean>('wishlist.migrated', false)
+  const { removeWithUndo } = useToast()
   const [activeCol, setActiveCol] = useState<string>(collections[0]?.id ?? 'all')
   const [query, setQuery] = useState('')
   const [adding, setAdding] = useState(false)
@@ -66,7 +68,12 @@ export default function Wishlist() {
   }, [items, activeCol, sortBy])
 
   const update = (id: string, patch: Partial<Product>) => setItems((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)))
-  const remove = (id: string) => { setItems((prev) => prev.filter((p) => p.id !== id)); setSelected((s) => { const n = new Set(s); n.delete(id); return n }) }
+  const remove = (id: string) => {
+    const item = items.find((p) => p.id === id)
+    if (!item) return
+    setSelected((s) => { const n = new Set(s); n.delete(id); return n })
+    removeWithUndo(`${item.name || 'Item'} removed`, () => setItems((prev) => prev.filter((p) => p.id !== id)), () => setItems((prev) => [item, ...prev]))
+  }
 
   const makeItem = (over: Partial<Product>): Product => ({
     id: uid('p'), collectionId: activeCol, name: '', price: '', rating: 0, link: '', image: '', notes: '',
@@ -80,13 +87,14 @@ export default function Wishlist() {
     setQuery('')
     if (/^https?:\/\//i.test(q)) {
       // Paste-a-link → unfurl
-      const placeholder = makeItem({ name: 'Loading…', link: q })
+      const placeholder = makeItem({ name: '', link: q, loading: true })
       setItems((prev) => [placeholder, ...prev])
       setAdding(true)
       const data = await unfurl(q)
       setAdding(false)
       setItems((prev) => prev.map((p) => p.id === placeholder.id ? {
         ...p,
+        loading: false,
         name: data?.title || q,
         image: data?.image || '',
         price: data?.price ? (data.price.startsWith('$') ? data.price : `$${data.price}`) : '',
@@ -199,6 +207,17 @@ export default function Wishlist() {
             const cur = priceNumber(p.price)
             const deal = target != null && cur != null && cur <= target
             const isSel = selected.has(p.id)
+            if (p.loading) {
+              return (
+                <Card key={p.id} className="p-4 flex flex-col gap-3">
+                  <Skeleton className="h-32 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                  <Skeleton className="h-12 w-full" />
+                  <p className="text-xs" style={{ color: 'var(--color-muted)' }}>Fetching product details…</p>
+                </Card>
+              )
+            }
             return (
               <Card key={p.id} className="p-4 flex flex-col" style={{ opacity: p.status === 'Bought' ? 0.7 : 1, outline: isSel ? '2px solid var(--color-accent)' : '2px solid transparent', outlineOffset: -2 }}>
                 <div className="h-32 rounded-xl mb-3 grid place-items-center overflow-hidden relative" style={{ background: 'var(--color-bg)' }}>

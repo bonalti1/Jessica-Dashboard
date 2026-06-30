@@ -18,6 +18,7 @@ export type Product = {
   targetPrice?: string
   source?: string
   ai?: string // AI pros/cons cache
+  loading?: boolean // transient: unfurling a pasted link
   bought?: boolean // legacy
 }
 
