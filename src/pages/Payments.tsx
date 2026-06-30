@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Card, PageHeader, Button, Input } from '../components/ui'
 import { IconPlus, IconTrash } from '../components/icons'
 import { useStore, uid } from '../lib/store'
@@ -8,6 +8,73 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 
 const money = (n: number) =>
   n.toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
+
+/**
+ * One month cell.
+ *   • single tap → toggle paid/unpaid (fills the bill's usual amount)
+ *   • double tap → edit the amount for that month
+ * A short click-timer keeps single and double taps from fighting, and
+ * touch-action:manipulation disables mobile double-tap-zoom so it stays crisp.
+ */
+function PaidCell({ value, expected, onToggle, onSet }: {
+  value: number | undefined
+  expected: number
+  onToggle: () => void
+  onSet: (v: number | null) => void
+}) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState('')
+  const timer = useRef<number | null>(null)
+  const paid = value !== undefined
+
+  const onClick = () => {
+    if (timer.current) return
+    timer.current = window.setTimeout(() => { timer.current = null; onToggle() }, 230)
+  }
+  const onDouble = () => {
+    if (timer.current) { clearTimeout(timer.current); timer.current = null }
+    setDraft(String(value ?? expected ?? ''))
+    setEditing(true)
+  }
+  const commit = () => {
+    onSet(draft.trim() === '' ? null : parseFloat(draft))
+    setEditing(false)
+  }
+
+  if (editing) {
+    return (
+      <input
+        autoFocus
+        type="number"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onFocus={(e) => e.target.select()}
+        onBlur={commit}
+        onKeyDown={(e) => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false) }}
+        className="h-8 w-16 text-center rounded-lg outline-none mx-auto"
+        style={{ background: 'var(--color-surface)', border: '2px solid var(--color-accent)', color: 'var(--color-text)', fontWeight: 600 }}
+      />
+    )
+  }
+
+  return (
+    <button
+      onClick={onClick}
+      onDoubleClick={onDouble}
+      title={paid ? 'Tap to undo · double-tap to edit the amount' : 'Tap to mark paid · double-tap to set a custom amount'}
+      className="h-8 w-16 text-center rounded-lg mx-auto transition-colors text-sm"
+      style={{
+        touchAction: 'manipulation',
+        background: paid ? 'color-mix(in srgb, var(--color-accent) 22%, transparent)' : 'var(--color-bg)',
+        border: `1px solid ${paid ? 'color-mix(in srgb, var(--color-accent) 45%, transparent)' : 'var(--color-border)'}`,
+        color: paid ? 'var(--color-text)' : 'var(--color-muted)',
+        fontWeight: paid ? 600 : 400,
+      }}
+    >
+      {paid ? money(value!) : <span style={{ opacity: 0.45 }}>{expected ? money(expected) : ''}</span>}
+    </button>
+  )
+}
 
 const DEFAULT_BILLS: Bill[] = [
   { id: uid('b'), name: 'Mortgage / Rent', amount: 1800 },
@@ -70,7 +137,7 @@ export default function Payments() {
     <div>
       <PageHeader
         title="Payments"
-        subtitle="Your bills for the whole year. Click a cell to mark it paid, then adjust the amount if it changed that month."
+        subtitle="Your bills for the whole year. Tap a cell to mark it paid; double-tap to edit the amount."
         action={
           <div className="flex items-center gap-1.5">
             <Button variant="outline" onClick={() => setYear((y) => y - 1)}>‹</Button>
@@ -145,29 +212,13 @@ export default function Payments() {
                   </td>
                   {MONTHS.map((_, m) => {
                     const val = cells[key(b.id, m)]
-                    const paid = val !== undefined
                     return (
                       <td key={m} className="px-1 py-1 text-center">
-                        <input
-                          type="number"
-                          value={val ?? ''}
-                          placeholder={String(b.amount || '')}
-                          onFocus={(e) => {
-                            // First click on an empty cell marks it paid at the expected amount.
-                            if (val === undefined && b.amount) {
-                              setCell(b.id, m, b.amount)
-                              requestAnimationFrame(() => e.target.select())
-                            }
-                          }}
-                          onChange={(e) => setCell(b.id, m, e.target.value === '' ? null : parseFloat(e.target.value))}
-                          title={paid ? 'Paid — edit the amount, or clear to undo' : 'Click to mark paid'}
-                          className="h-8 w-14 text-center rounded-lg outline-none transition-colors"
-                          style={{
-                            background: paid ? 'color-mix(in srgb, var(--color-accent) 22%, transparent)' : 'var(--color-bg)',
-                            border: `1px solid ${paid ? 'color-mix(in srgb, var(--color-accent) 45%, transparent)' : 'var(--color-border)'}`,
-                            color: paid ? 'var(--color-text)' : 'var(--color-muted)',
-                            fontWeight: paid ? 600 : 400,
-                          }}
+                        <PaidCell
+                          value={val}
+                          expected={b.amount}
+                          onToggle={() => setCell(b.id, m, val === undefined ? (b.amount || 0) : null)}
+                          onSet={(v) => setCell(b.id, m, v)}
                         />
                       </td>
                     )
@@ -223,7 +274,7 @@ export default function Payments() {
       </Card>
 
       <p className="text-xs mt-3" style={{ color: 'var(--color-muted)' }}>
-        Click a month cell to mark a bill paid — it fills the expected amount, which you can edit if it changed that month. Clear a cell to undo. Row totals (right) show what you paid per bill; the bottom row shows each month's total.
+        Tap a month cell to mark it paid (it fills the usual amount) — tap again to undo. Double-tap a cell to edit the amount for a month it changed. Row totals (right) show what you paid per bill; the bottom row shows each month's total.
       </p>
     </div>
   )
