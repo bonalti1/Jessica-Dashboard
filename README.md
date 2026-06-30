@@ -40,19 +40,53 @@ npm run preview  # preview the production build
 - **`src/components/`** — `Sidebar`, shared `ui` primitives, icon set.
 - **`src/pages/`** — one file per dashboard section.
 
-## Roadmap — connected services (Tier 2)
+## Deploy to Netlify
+
+The app is configured to deploy to Netlify with serverless functions (see
+`netlify.toml`).
+
+1. Push this branch to GitHub (done).
+2. In Netlify: **Add new site → Import from GitHub** and pick this repo.
+   Build command and publish dir are auto-detected from `netlify.toml`
+   (`npm run build` → `dist`).
+3. Add the environment variable under **Site settings → Environment variables**:
+   - `OPENAI_API_KEY` = your OpenAI secret key (required for "Ask AI")
+   - `OPENAI_MODEL` = `gpt-4o-mini` (optional)
+4. Deploy. The site is also an installable **PWA** — open it on a phone and
+   choose "Add to Home Screen" to use it like a native app.
+
+### Local development
+
+```bash
+npm run dev                 # UI only (AI falls back to local search)
+npm i -g netlify-cli        # one-time
+netlify dev                 # runs the app + the AI function together
+```
+
+## The AI assistant
+
+- Browser builds a snapshot of saved data (`src/lib/ai.ts`) and POSTs it with
+  the question to `/.netlify/functions/ask`.
+- The function (`netlify/functions/ask.ts`) holds the API key and calls OpenAI.
+  The key is **never** exposed to the browser.
+- If the key isn't set or the function is unreachable, the UI gracefully falls
+  back to an instant local search across the data.
+- Provider is isolated in `callOpenAI()` so Claude/others can be added later
+  without touching the frontend.
+
+## Roadmap — connected services
 
 These are built with clean integration points so they drop in when ready:
 
-1. **Bank (Plaid)** — live balances and "deposited last month". Needs a Plaid
-   account + small backend to hold keys.
-2. **Google Calendar** — two-way sync. A Google Calendar connector is already
-   available in this workspace; needs authorization.
-3. **Full Claude AI assistant** — conversational Q&A over all data. Needs a
-   Claude API key + small backend.
-4. **Phone push notifications** — web push / email reminders + a daily
+1. **AI assistant (OpenAI)** — ✅ wired now via Netlify function. Just add the key.
+2. **Bank (Plaid)** — live balances and "deposited last month". Add a Plaid
+   account + a `netlify/functions/plaid-*` function alongside the existing one.
+3. **Google Calendar** — two-way sync via Google's API / OAuth.
+4. **Apple Health / Garmin** — import weight, activity and labs into the Health
+   page (HealthKit export or Garmin Connect API).
+5. **Phone push notifications** — web push / email reminders + a daily
    scheduler, feeding off the existing Notifications list.
-5. **Live product search** for the Wishlist (Amazon/Google Shopping/RapidAPI).
+6. **Live product search** for the Wishlist (Amazon/Google Shopping/RapidAPI).
 
 ## Privacy
 

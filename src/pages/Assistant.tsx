@@ -1,15 +1,12 @@
-import { useState } from 'react'
-import { Card, PageHeader, Button, Input, IntegrationNote } from '../components/ui'
-import { IconAssistant, IconSearch } from '../components/icons'
+import { useEffect, useRef, useState } from 'react'
+import { Card, PageHeader, Button, Input } from '../components/ui'
+import { IconAssistant } from '../components/icons'
+import { useStore } from '../lib/store'
+import { askAI, type ChatMessage } from '../lib/ai'
 
 type Hit = { source: string; date: string; text: string }
 
-/**
- * v1 assistant: a real, working search across everything Jessica has stored
- * locally — so "When did I do X?" actually returns answers today. When we add a
- * Claude API key + small backend, this same box becomes a full conversational
- * assistant that can reason over her data.
- */
+/** Local fallback search — used when the AI service isn't connected/reachable. */
 function searchEverything(q: string): Hit[] {
   const query = q.toLowerCase().trim()
   if (!query) return []
@@ -17,7 +14,7 @@ function searchEverything(q: string): Hit[] {
   const get = <T,>(key: string): T[] => {
     try { return JSON.parse(localStorage.getItem('jess:' + key) || '[]') } catch { return [] }
   }
-  const match = (s: string) => s && s.toLowerCase().includes(query)
+  const match = (s: string) => !!s && s.toLowerCase().includes(query)
 
   get<{ date: string; title: string }>('calendar.events').forEach((e) => {
     if (match(e.title)) hits.push({ source: 'Calendar', date: e.date, text: e.title })
@@ -32,62 +29,124 @@ function searchEverything(q: string): Hit[] {
   get<{ text: string; done: boolean; created: number }>('tasks.master').forEach((t) => {
     if (match(t.text)) hits.push({ source: t.done ? 'Task (done)' : 'Task', date: new Date(t.created).toISOString().slice(0, 10), text: t.text })
   })
-  get<{ date: string; value: number }>('health.weights').forEach((w) => {
-    if (match('weight')) hits.push({ source: 'Weight', date: w.date, text: `${w.value}` })
-  })
-
   return hits.sort((a, b) => (b.date || '').localeCompare(a.date || ''))
 }
 
-export default function Assistant() {
-  const [q, setQ] = useState('')
-  const [results, setResults] = useState<Hit[] | null>(null)
+function localAnswer(q: string): string {
+  const hits = searchEverything(q)
+  if (hits.length === 0) {
+    return `I couldn't find anything about "${q}" in your saved data. (The full AI assistant isn't connected yet — add your OPENAI_API_KEY in Netlify to turn it on.)`
+  }
+  const lines = hits.slice(0, 8).map((h) => `• ${h.date || '—'} — ${h.text} (${h.source})`)
+  return `Here's what I found in your data:\n${lines.join('\n')}\n\n(Tip: connect the AI key in Netlify for full conversational answers.)`
+}
 
-  const run = () => setResults(searchEverything(q))
+const SUGGESTIONS = [
+  'When did I last go to the doctor?',
+  'Which bills have I not paid this month?',
+  'What appointments are coming up?',
+  'Summarize my week.',
+]
+
+export default function Assistant() {
+  const [messages, setMessages] = useStore<ChatMessage[]>('ai.chat', [])
+  const [input, setInput] = useState('')
+  const [busy, setBusy] = useState(false)
+  const endRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages, busy])
+
+  const send = async (text: string) => {
+    const q = text.trim()
+    if (!q || busy) return
+    setInput('')
+    const history = messages.slice()
+    setMessages((prev) => [...prev, { role: 'user', content: q }])
+    setBusy(true)
+    const result = await askAI(q, history)
+    const answer = result.ok ? result.answer : localAnswer(q)
+    setMessages((prev) => [...prev, { role: 'assistant', content: answer }])
+    setBusy(false)
+  }
 
   return (
     <div>
-      <PageHeader title="Ask AI" subtitle='Ask things like "When did I go to the dentist?" or "weight in March".' />
+      <PageHeader
+        title="Ask AI"
+        subtitle='Ask anything about your dashboard — "When did I do this?", "What do I owe?"'
+        action={messages.length > 0 ? <Button variant="outline" onClick={() => setMessages([])}>Clear chat</Button> : undefined}
+      />
 
-      <Card className="p-5 mb-6">
-        <form onSubmit={(e) => { e.preventDefault(); run() }} className="flex gap-2">
-          <div className="relative flex-1">
-            <IconSearch width={18} height={18} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-muted)' }} />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="When did I…?" className="!pl-10" />
-          </div>
-          <Button type="submit">Ask</Button>
-        </form>
-
-        {results !== null && (
-          <div className="mt-4">
-            {results.length === 0 ? (
-              <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
-                Nothing found for “{q}”. Try a different word, or add it under Calendar / Health / Family first.
+      <Card className="flex flex-col" style={{ height: 'calc(100vh - 220px)', minHeight: 420 }}>
+        <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-3">
+          {messages.length === 0 && !busy && (
+            <div className="m-auto text-center max-w-md">
+              <div className="mx-auto mb-3 h-14 w-14 rounded-2xl grid place-items-center" style={{ background: 'var(--color-accent)', color: '#06352f' }}>
+                <IconAssistant width={28} height={28} />
+              </div>
+              <p className="font-semibold mb-1" style={{ color: 'var(--color-text)' }}>Ask me about your dashboard</p>
+              <p className="text-sm mb-4" style={{ color: 'var(--color-muted)' }}>
+                I can look across your tasks, bills, calendar, health and family.
               </p>
-            ) : (
-              <ul className="flex flex-col gap-2">
-                {results.map((h, i) => (
-                  <li key={i} className="flex items-center gap-3 p-3 rounded-xl" style={{ background: 'var(--color-bg)' }}>
-                    <span className="text-xs font-semibold px-2 py-1 rounded-md shrink-0" style={{ background: 'var(--color-accent)', color: '#06352f' }}>{h.source}</span>
-                    <span className="text-sm flex-1" style={{ color: 'var(--color-text)' }}>{h.text}</span>
-                    <span className="text-xs" style={{ color: 'var(--color-muted)' }}>{h.date || '—'}</span>
-                  </li>
+              <div className="flex flex-wrap gap-2 justify-center">
+                {SUGGESTIONS.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => send(s)}
+                    className="text-sm px-3 py-1.5 rounded-full transition hover:scale-[1.03]"
+                    style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text)' }}
+                  >
+                    {s}
+                  </button>
                 ))}
-              </ul>
-            )}
-          </div>
-        )}
+              </div>
+            </div>
+          )}
+
+          {messages.map((m, i) => (
+            <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div
+                className="max-w-[80%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap leading-relaxed"
+                style={
+                  m.role === 'user'
+                    ? { background: 'var(--color-accent)', color: '#06352f' }
+                    : { background: 'var(--color-bg)', color: 'var(--color-text)', border: '1px solid var(--color-border)' }
+                }
+              >
+                {m.content}
+              </div>
+            </div>
+          ))}
+
+          {busy && (
+            <div className="flex justify-start">
+              <div className="rounded-2xl px-4 py-3" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
+                <span className="inline-flex gap-1">
+                  <span className="h-2 w-2 rounded-full animate-bounce" style={{ background: 'var(--color-muted)', animationDelay: '0ms' }} />
+                  <span className="h-2 w-2 rounded-full animate-bounce" style={{ background: 'var(--color-muted)', animationDelay: '150ms' }} />
+                  <span className="h-2 w-2 rounded-full animate-bounce" style={{ background: 'var(--color-muted)', animationDelay: '300ms' }} />
+                </span>
+              </div>
+            </div>
+          )}
+          <div ref={endRef} />
+        </div>
+
+        <form
+          onSubmit={(e) => { e.preventDefault(); send(input) }}
+          className="flex gap-2 p-4"
+          style={{ borderTop: '1px solid var(--color-border)' }}
+        >
+          <Input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask a question…" disabled={busy} />
+          <Button type="submit" disabled={busy || !input.trim()}>Send</Button>
+        </form>
       </Card>
 
-      <IntegrationNote title="Full Claude AI assistant (next phase)">
-        Right now this searches everything you've saved and finds matches instantly — no setup needed.
-        With a Claude API key and a small backend, this same box becomes a real conversation: it can
-        summarize your month, answer follow-ups, and reason across bills, health and family data in plain
-        language. I've built it so the upgrade is a drop-in.
-        <div className="mt-2 flex items-center gap-2 text-xs" style={{ color: 'var(--color-muted)' }}>
-          <IconAssistant width={16} height={16} /> Recommended model: Claude (latest).
-        </div>
-      </IntegrationNote>
+      <p className="text-xs mt-3" style={{ color: 'var(--color-muted)' }}>
+        Powered by OpenAI through a secure Netlify function — your data is sent only to answer your question and is never stored on a server.
+      </p>
     </div>
   )
 }
