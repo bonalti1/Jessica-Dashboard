@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { Card, PageHeader, Button, Input } from '../components/ui'
-import { IconPlus, IconTrash } from '../components/icons'
+import { IconPlus, IconTrash, IconCheck } from '../components/icons'
 import { useStore, uid } from '../lib/store'
 import { useToast } from '../lib/toast'
 
@@ -95,9 +95,11 @@ export default function Payments() {
   const [cells, setCells] = useStore<Record<string, number>>('pay.cells', {})
   const [income, setIncome] = useStore<Record<string, number>>('pay.income', {})
 
-  const { removeWithUndo } = useToast()
+  const { removeWithUndo, toast } = useToast()
   const [newName, setNewName] = useState('')
   const [newAmount, setNewAmount] = useState('')
+  const [view, setView] = useState<'year' | 'month'>('year')
+  const [viewMonth, setViewMonth] = useState<number>(new Date().getMonth())
 
   const key = (billId: string, m: number) => `${year}:${billId}:${m}`
 
@@ -128,6 +130,33 @@ export default function Payments() {
   }
   const editBaseAmount = (id: string, amount: number) =>
     setBills((prev) => prev.map((b) => (b.id === id ? { ...b, amount } : b)))
+
+  // Mark/clear a whole bill for the year.
+  const fillRow = (bill: Bill) => setCells((prev) => {
+    const next = { ...prev }
+    MONTHS.forEach((_, m) => { next[`${year}:${bill.id}:${m}`] = bill.amount || 0 })
+    return next
+  })
+  const clearRow = (bill: Bill) => setCells((prev) => {
+    const next = { ...prev }
+    MONTHS.forEach((_, m) => delete next[`${year}:${bill.id}:${m}`])
+    return next
+  })
+
+  // Import bills from a CSV ("name,amount" per line; header optional).
+  const importCSV = (text: string) => {
+    const rows = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
+    const added: Bill[] = []
+    for (const row of rows) {
+      const parts = row.split(',')
+      const name = (parts[0] || '').replace(/^"|"$/g, '').trim()
+      if (!name || /^(bill|name|item)$/i.test(name)) continue
+      const amt = parseFloat((parts[1] || '').replace(/[^0-9.]/g, ''))
+      added.push({ id: uid('b'), name, amount: isNaN(amt) ? 0 : amt })
+    }
+    if (added.length) { setBills((prev) => [...prev, ...added]); toast(`Imported ${added.length} bill${added.length === 1 ? '' : 's'}`) }
+    else toast('No bills found in that file')
+  }
 
   const expectedMonthly = useMemo(() => bills.reduce((s, b) => s + b.amount, 0), [bills])
 
@@ -179,6 +208,70 @@ export default function Payments() {
         </Card>
       </div>
 
+      {/* Controls */}
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <div className="inline-flex rounded-xl p-1" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-sm)' }}>
+          {(['year', 'month'] as const).map((v) => (
+            <button key={v} onClick={() => setView(v)} className="px-4 py-1.5 rounded-lg text-sm font-semibold capitalize transition"
+              style={{ background: view === v ? 'var(--color-accent)' : 'transparent', color: view === v ? 'var(--color-on-accent)' : 'var(--color-muted)' }}>{v} view</button>
+          ))}
+        </div>
+        <label className="text-sm cursor-pointer px-3 py-2 rounded-xl font-semibold" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text)' }}>
+          Import CSV
+          <input type="file" accept=".csv,text/csv,text/plain" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (!f) return; f.text().then(importCSV); e.currentTarget.value = '' }} />
+        </label>
+        <span className="text-xs" style={{ color: 'var(--color-muted)' }}>CSV format: <code>name,amount</code> per line</span>
+      </div>
+
+      {/* Spend chart */}
+      {yearPaid > 0 && (
+        <Card className="p-5 mb-6">
+          <p className="text-xs uppercase tracking-wide mb-3" style={{ color: 'var(--color-muted)' }}>Paid each month · {year}</p>
+          <div className="flex items-end gap-1.5" style={{ height: 120 }}>
+            {colTotals.map((v, m) => {
+              const max = Math.max(...colTotals, 1)
+              return (
+                <div key={m} className="flex-1 flex flex-col items-center gap-1 cursor-pointer" onClick={() => { setView('month'); setViewMonth(m) }}>
+                  <div className="w-full rounded-t-md transition-all" style={{ height: `${(v / max) * 90}px`, minHeight: v > 0 ? 4 : 0, background: m === new Date().getMonth() ? 'var(--color-accent)' : 'color-mix(in srgb, var(--color-accent) 45%, transparent)' }} title={money(v)} />
+                  <span className="text-[10px]" style={{ color: 'var(--color-muted)' }}>{MONTHS[m]}</span>
+                </div>
+              )
+            })}
+          </div>
+        </Card>
+      )}
+
+      {view === 'month' && (
+        <Card className="p-5 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-1.5">
+              <Button variant="outline" onClick={() => setViewMonth((m) => (m + 11) % 12)}>‹</Button>
+              <span className="font-semibold text-lg px-1" style={{ color: 'var(--color-text)' }}>{MONTHS[viewMonth]} {year}</span>
+              <Button variant="outline" onClick={() => setViewMonth((m) => (m + 1) % 12)}>›</Button>
+            </div>
+            <span className="text-sm tnum font-semibold" style={{ color: 'var(--color-accent)' }}>{money(colTotals[viewMonth])} paid</span>
+          </div>
+          <ul className="flex flex-col gap-2">
+            {bills.map((b) => {
+              const val = cells[key(b.id, viewMonth)]
+              const paid = val !== undefined
+              return (
+                <li key={b.id} className="flex items-center gap-3 p-3 rounded-xl" style={{ background: 'var(--color-bg)' }}>
+                  <button onClick={() => setCell(b.id, viewMonth, paid ? null : (b.amount || 0))} className="h-6 w-6 rounded-md grid place-items-center shrink-0"
+                    style={{ border: '2px solid var(--color-accent)', background: paid ? 'var(--color-accent)' : 'transparent' }}>
+                    {paid && <IconCheck width={14} height={14} style={{ color: 'var(--color-on-accent)' }} />}
+                  </button>
+                  <span className="flex-1 font-medium" style={{ color: 'var(--color-text)', opacity: paid ? 1 : 0.7 }}>{b.name}</span>
+                  <input type="number" value={val ?? ''} placeholder={String(b.amount || 0)} onChange={(e) => setCell(b.id, viewMonth, e.target.value === '' ? null : parseFloat(e.target.value))}
+                    className="w-24 text-right rounded-lg px-2 py-1 outline-none tnum" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: paid ? 'var(--color-text)' : 'var(--color-muted)', fontWeight: paid ? 600 : 400 }} />
+                </li>
+              )
+            })}
+          </ul>
+        </Card>
+      )}
+
+      {view === 'year' && (
       <Card className="p-0 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm tnum">
@@ -211,9 +304,11 @@ export default function Payments() {
                             placeholder="0"
                             onChange={(e) => editBaseAmount(b.id, parseFloat(e.target.value) || 0)}
                             title="Default amount — fills in when you mark a month paid"
-                            className="w-14 bg-transparent outline-none"
+                            className="w-12 bg-transparent outline-none"
                             style={{ color: 'var(--color-muted)' }}
                           />
+                          <button onClick={() => fillRow(b)} className="opacity-0 group-hover:opacity-100 font-semibold ml-1" style={{ color: 'var(--color-accent)' }} title="Mark all 12 months paid">Fill yr</button>
+                          <button onClick={() => clearRow(b)} className="opacity-0 group-hover:opacity-100" style={{ color: 'var(--color-muted)' }} title="Clear all months">Clear</button>
                         </div>
                       </div>
                       <button onClick={() => removeBill(b.id)} className="opacity-0 group-hover:opacity-60 shrink-0 self-start mt-1" style={{ color: 'var(--color-muted)' }}>
@@ -276,8 +371,12 @@ export default function Payments() {
             </tbody>
           </table>
         </div>
+      </Card>
+      )}
 
-        <div className="flex flex-wrap items-center gap-2 p-4" style={{ borderTop: '1px solid var(--color-border)' }}>
+      {/* Add bill (always available) */}
+      <Card className="p-4 mt-6">
+        <div className="flex flex-wrap items-center gap-2">
           <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="New bill name" className="max-w-xs" />
           <Input value={newAmount} onChange={(e) => setNewAmount(e.target.value)} placeholder="Expected amount" type="number" className="max-w-[150px]" />
           <Button onClick={addBill}><IconPlus width={16} height={16} /> Add bill</Button>
@@ -285,7 +384,9 @@ export default function Payments() {
       </Card>
 
       <p className="text-xs mt-3" style={{ color: 'var(--color-muted)' }}>
-        Tap a month cell to mark it paid (it fills the usual amount) — tap again to undo. Double-tap a cell to edit the amount for a month it changed. Row totals (right) show what you paid per bill; the bottom row shows each month's total.
+        {view === 'year'
+          ? 'Tap a month cell to mark it paid (it fills the usual amount) — tap again to undo. Double-tap a cell to edit the amount. Hover a bill name to fill or clear the whole year.'
+          : 'Tap the checkbox to mark a bill paid this month, or type the exact amount. Switch to Year view for the full grid.'}
       </p>
     </div>
   )

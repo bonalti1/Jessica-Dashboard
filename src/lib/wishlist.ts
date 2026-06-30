@@ -19,6 +19,7 @@ export type Product = {
   source?: string
   ai?: string // AI pros/cons cache
   loading?: boolean // transient: unfurling a pasted link
+  priceHistory?: { d: string; p: number }[] // recorded when the price changes
   bought?: boolean // legacy
 }
 

@@ -9,13 +9,13 @@ Target pricing direction: consumer **$8–10/month** with a free tier (not $100)
 - [x] Profile name → greeting + signature
 - [x] Compact, static sidebar
 
-## Phase 2 — Tab depth
-- [ ] Family: per-member profiles (appts, meds, records, report cards, allergies/doctor/insurance, avatars)
-- [ ] Health: weight chart with goal line, goal weight/BMI, more metrics, searchable records
-- [ ] Payments: month view, fill-row, spend chart, CSV import, recurring auto-mark
-- [ ] Calendar: event times, click-to-edit, agenda view
-- [ ] Tasks: filter chips + grouping
-- [ ] Wishlist: running totals + price-drop tracking
+## Phase 2 — Tab depth ✅
+- [x] Family: per-member profiles (appts, meds, records, report cards, allergies/doctor/insurance, avatars)
+- [x] Health: weight chart with goal line, goal weight/BMI, searchable records
+- [x] Payments: month view, fill-row, spend chart, CSV import
+- [x] Calendar: event times, click-to-edit, agenda view
+- [x] Tasks: filter chips + grouping (week/month)
+- [x] Wishlist: running totals + price history
 
 ## Phase 3 — Connected services
 - [ ] Google Calendar sync

@@ -68,6 +68,13 @@ export default function Wishlist() {
   }, [items, activeCol, sortBy])
 
   const update = (id: string, patch: Partial<Product>) => setItems((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)))
+  const recordPrice = (p: Product) => {
+    const n = priceNumber(p.price)
+    if (n == null) return
+    const hist = p.priceHistory ?? []
+    if (hist.length && hist[hist.length - 1].p === n) return
+    update(p.id, { priceHistory: [...hist, { d: new Date().toISOString().slice(0, 10), p: n }] })
+  }
   const remove = (id: string) => {
     const item = items.find((p) => p.id === id)
     if (!item) return
@@ -187,6 +194,11 @@ export default function Wishlist() {
         ))}
         <button onClick={addCollection} className="px-3 py-1.5 rounded-full text-sm" style={{ color: 'var(--color-muted)', border: '1px dashed var(--color-border)' }}>＋ List</button>
         <div className="ml-auto flex items-center gap-2">
+          {colItems.some((p) => priceNumber(p.price) != null) && (
+            <span className="text-sm font-semibold tnum" style={{ color: 'var(--color-text)' }}>
+              Total ${colItems.reduce((s, p) => s + (priceNumber(p.price) ?? 0), 0).toLocaleString()}
+            </span>
+          )}
           <select value={sortBy} onChange={(e) => setSortBy(e.target.value as typeof sortBy)} className="rounded-lg px-2 py-1.5 text-sm outline-none" style={selectStyle}>
             <option value="recent">Recent</option>
             <option value="price">Price ↑</option>
@@ -238,8 +250,21 @@ export default function Wishlist() {
                     <Stars value={p.rating} onChange={(v) => update(p.id, { rating: v })} />
                     {p.reviews != null && <span className="text-xs" style={{ color: 'var(--color-muted)' }}>({p.reviews.toLocaleString()})</span>}
                   </div>
-                  <input value={p.price} onChange={(e) => update(p.id, { price: e.target.value })} placeholder="$ price" className="w-20 text-right bg-transparent outline-none font-bold" style={{ color: 'var(--color-accent)' }} />
+                  <input value={p.price} onChange={(e) => update(p.id, { price: e.target.value })} onBlur={() => recordPrice(p)} placeholder="$ price" className="w-20 text-right bg-transparent outline-none font-bold" style={{ color: 'var(--color-accent)' }} />
                 </div>
+
+                {(() => {
+                  const hist = p.priceHistory ?? []
+                  if (hist.length < 2) return null
+                  const low = Math.min(...hist.map((h) => h.p))
+                  const cur = priceNumber(p.price)
+                  const dropped = cur != null && cur <= low
+                  return (
+                    <div className="text-xs mb-2 flex items-center gap-1" style={{ color: dropped ? 'var(--color-accent)' : 'var(--color-muted)' }}>
+                      {dropped ? '▼ lowest yet' : `▲ was as low as $${low.toLocaleString()}`}
+                    </div>
+                  )
+                })()}
 
                 <div className="flex gap-2 mb-2">
                   <select value={p.status} onChange={(e) => update(p.id, { status: e.target.value as Status })} className="flex-1 rounded-lg px-2 py-1 text-xs outline-none" style={selectStyle}>

@@ -3,7 +3,7 @@ import { Card, PageHeader, Button, Input, EmptyState } from '../components/ui'
 import { IconPlus, IconTrash, IconCheck, IconTasks } from '../components/icons'
 import { useStore, uid } from '../lib/store'
 import { useToast } from '../lib/toast'
-import { formatDueLabel, daysUntil } from '../lib/dates'
+import { formatDueLabel, daysUntil, isoWeek, parseDate, monthShort, startOfWeek, addDays, toISO } from '../lib/dates'
 
 type Task = { id: string; text: string; done: boolean; created: number; due?: string }
 
@@ -87,6 +87,51 @@ export default function Tasks() {
 
   const remaining = tasks.filter((t) => !t.done).length
 
+  const [filter, setFilter] = useState<'all' | 'today' | 'week' | 'overdue'>('all')
+  const [group, setGroup] = useState<'none' | 'week' | 'month'>('none')
+
+  const filtered = useMemo(() => {
+    const todayStr = toISO(new Date())
+    const ws = toISO(startOfWeek(new Date()))
+    const we = toISO(addDays(startOfWeek(new Date()), 6))
+    return sorted.filter((t) => {
+      if (filter === 'all') return true
+      if (!t.due) return false
+      if (filter === 'today') return t.due === todayStr
+      if (filter === 'week') return t.due >= ws && t.due <= we
+      if (filter === 'overdue') return !t.done && (daysUntil(t.due) ?? 0) < 0
+      return true
+    })
+  }, [sorted, filter])
+
+  const grouped = useMemo(() => {
+    if (group === 'none') return null
+    const map = new Map<string, Task[]>()
+    for (const t of filtered) {
+      const d = t.due ? parseDate(t.due) : null
+      const keyName = !d ? 'No date' : group === 'week' ? `Week ${isoWeek(d)}` : `${monthShort(d)} ${d.getFullYear()}`
+      if (!map.has(keyName)) map.set(keyName, [])
+      map.get(keyName)!.push(t)
+    }
+    return Array.from(map.entries())
+  }, [filtered, group])
+
+  const renderRow = (t: Task) => (
+    <li key={t.id} className="group flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-black/5">
+      <button onClick={() => toggle(t.id)} className="h-5 w-5 rounded-md grid place-items-center shrink-0 transition"
+        style={{ border: '2px solid var(--color-accent)', background: t.done ? 'var(--color-accent)' : 'transparent' }} aria-label="toggle">
+        {t.done && <IconCheck width={13} height={13} style={{ color: 'var(--color-on-accent)' }} />}
+      </button>
+      <span className="flex-1 text-sm min-w-0 truncate" style={{ color: 'var(--color-text)', textDecoration: t.done ? 'line-through' : 'none', opacity: t.done ? 0.5 : 1 }}>{t.text}</span>
+      <DuePill value={t.due} onChange={(v) => setDue(t.id, v)} />
+      <button onClick={() => removeTask(t.id)} className="opacity-0 group-hover:opacity-60 hover:!opacity-100 shrink-0" style={{ color: 'var(--color-muted)' }}><IconTrash width={16} height={16} /></button>
+    </li>
+  )
+
+  const FILTERS: { key: typeof filter; label: string }[] = [
+    { key: 'all', label: 'All' }, { key: 'today', label: 'Today' }, { key: 'week', label: 'This week' }, { key: 'overdue', label: 'Overdue' },
+  ]
+
   return (
     <div>
       <PageHeader
@@ -115,33 +160,38 @@ export default function Tasks() {
             <Button type="submit"><IconPlus width={18} height={18} /></Button>
           </form>
 
+          {/* Filters + grouping */}
+          {tasks.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5 mb-3">
+              {FILTERS.map((f) => (
+                <button key={f.key} onClick={() => setFilter(f.key)} className="text-xs font-semibold px-2.5 py-1 rounded-full transition"
+                  style={filter === f.key ? { background: 'var(--color-accent)', color: 'var(--color-on-accent)' } : { background: 'var(--color-bg)', color: 'var(--color-muted)', border: '1px solid var(--color-border)' }}>
+                  {f.label}
+                </button>
+              ))}
+              <select value={group} onChange={(e) => setGroup(e.target.value as typeof group)} className="ml-auto rounded-lg px-2 py-1 text-xs outline-none" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text)' }}>
+                <option value="none">No grouping</option>
+                <option value="week">By week</option>
+                <option value="month">By month</option>
+              </select>
+            </div>
+          )}
+
           {tasks.length === 0 ? (
             <EmptyState icon={<IconTasks width={40} height={40} />} title="No tasks yet" hint="Add one above, or promote something from your brain dump." />
-          ) : (
-            <ul className="flex flex-col gap-1">
-              {sorted.map((t) => (
-                <li key={t.id} className="group flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-black/5">
-                  <button
-                    onClick={() => toggle(t.id)}
-                    className="h-5 w-5 rounded-md grid place-items-center shrink-0 transition"
-                    style={{ border: '2px solid var(--color-accent)', background: t.done ? 'var(--color-accent)' : 'transparent' }}
-                    aria-label="toggle"
-                  >
-                    {t.done && <IconCheck width={13} height={13} style={{ color: 'var(--color-on-accent)' }} />}
-                  </button>
-                  <span
-                    className="flex-1 text-sm min-w-0 truncate"
-                    style={{ color: 'var(--color-text)', textDecoration: t.done ? 'line-through' : 'none', opacity: t.done ? 0.5 : 1 }}
-                  >
-                    {t.text}
-                  </span>
-                  <DuePill value={t.due} onChange={(v) => setDue(t.id, v)} />
-                  <button onClick={() => removeTask(t.id)} className="opacity-0 group-hover:opacity-60 hover:!opacity-100 shrink-0" style={{ color: 'var(--color-muted)' }}>
-                    <IconTrash width={16} height={16} />
-                  </button>
-                </li>
+          ) : filtered.length === 0 ? (
+            <p className="text-sm py-6 text-center" style={{ color: 'var(--color-muted)' }}>Nothing matches this filter.</p>
+          ) : grouped ? (
+            <div className="flex flex-col gap-4">
+              {grouped.map(([name, items]) => (
+                <div key={name}>
+                  <div className="text-xs font-semibold uppercase tracking-wide mb-1 px-1" style={{ color: 'var(--color-muted)' }}>{name}</div>
+                  <ul className="flex flex-col gap-1">{items.map(renderRow)}</ul>
+                </div>
               ))}
-            </ul>
+            </div>
+          ) : (
+            <ul className="flex flex-col gap-1">{filtered.map(renderRow)}</ul>
           )}
         </Card>
 
