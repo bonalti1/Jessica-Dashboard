@@ -106,8 +106,7 @@ export default function Payments() {
           <table className="w-full border-collapse text-sm tnum">
             <thead>
               <tr style={{ background: 'var(--color-bg)' }}>
-                <th className="sticky left-0 z-10 text-left px-4 py-3 font-semibold" style={{ background: 'var(--color-bg)', color: 'var(--color-text)', minWidth: 170 }}>Bill</th>
-                <th className="px-3 py-3 font-medium text-right" style={{ color: 'var(--color-muted)', minWidth: 80 }}>Expected</th>
+                <th className="sticky left-0 z-10 text-left px-4 py-3 font-semibold" style={{ background: 'var(--color-bg)', color: 'var(--color-text)', minWidth: 190 }}>Bill</th>
                 {MONTHS.map((m) => (
                   <th key={m} className="px-2 py-3 font-medium text-center" style={{ color: 'var(--color-muted)', minWidth: 58 }}>{m}</th>
                 ))}
@@ -119,26 +118,30 @@ export default function Payments() {
                 <tr key={b.id} className="group" style={{ borderTop: '1px solid var(--color-border)' }}>
                   <td className="sticky left-0 z-10 px-4 py-2" style={{ background: 'var(--color-surface)' }}>
                     <div className="flex items-center gap-2">
-                      <input
-                        value={b.name}
-                        onChange={(e) => setBills((prev) => prev.map((x) => x.id === b.id ? { ...x, name: e.target.value } : x))}
-                        className="font-medium bg-transparent outline-none w-full"
-                        style={{ color: 'var(--color-text)' }}
-                      />
-                      <button onClick={() => removeBill(b.id)} className="opacity-0 group-hover:opacity-60 shrink-0" style={{ color: 'var(--color-muted)' }}>
+                      <div className="flex-1 min-w-0">
+                        <input
+                          value={b.name}
+                          onChange={(e) => setBills((prev) => prev.map((x) => x.id === b.id ? { ...x, name: e.target.value } : x))}
+                          className="font-medium bg-transparent outline-none w-full"
+                          style={{ color: 'var(--color-text)' }}
+                        />
+                        <div className="flex items-center gap-1 text-xs" style={{ color: 'var(--color-muted)' }}>
+                          <span>usually $</span>
+                          <input
+                            type="number"
+                            value={b.amount || ''}
+                            placeholder="0"
+                            onChange={(e) => editBaseAmount(b.id, parseFloat(e.target.value) || 0)}
+                            title="Default amount — fills in when you mark a month paid"
+                            className="w-14 bg-transparent outline-none"
+                            style={{ color: 'var(--color-muted)' }}
+                          />
+                        </div>
+                      </div>
+                      <button onClick={() => removeBill(b.id)} className="opacity-0 group-hover:opacity-60 shrink-0 self-start mt-1" style={{ color: 'var(--color-muted)' }}>
                         <IconTrash width={14} height={14} />
                       </button>
                     </div>
-                  </td>
-                  <td className="px-3 py-2 text-right">
-                    <input
-                      type="number"
-                      value={b.amount || ''}
-                      placeholder="0"
-                      onChange={(e) => editBaseAmount(b.id, parseFloat(e.target.value) || 0)}
-                      className="w-16 text-right rounded-md px-1.5 py-1 bg-transparent outline-none"
-                      style={{ color: 'var(--color-muted)' }}
-                    />
                   </td>
                   {MONTHS.map((_, m) => {
                     const val = cells[key(b.id, m)]
@@ -178,7 +181,6 @@ export default function Payments() {
               {/* Income row */}
               <tr style={{ borderTop: '2px solid var(--color-border)', background: 'var(--color-bg)' }}>
                 <td className="sticky left-0 z-10 px-4 py-2 font-semibold" style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }}>Income</td>
-                <td />
                 {MONTHS.map((_, m) => (
                   <td key={m} className="px-1 py-1 text-center">
                     <input
@@ -202,7 +204,6 @@ export default function Payments() {
               {/* Column totals */}
               <tr style={{ borderTop: '1px solid var(--color-border)' }}>
                 <td className="sticky left-0 z-10 px-4 py-3 font-semibold" style={{ background: 'var(--color-surface)', color: 'var(--color-text)' }}>Total paid</td>
-                <td />
                 {colTotals.map((amt, m) => (
                   <td key={m} className="px-1 py-3 text-center text-xs font-semibold" style={{ color: amt > 0 ? 'var(--color-accent)' : 'var(--color-muted)' }}>
                     {amt > 0 ? money(amt) : '—'}
