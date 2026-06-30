@@ -36,14 +36,14 @@ function useClock() {
 function Section({ items, label, onNavigate }: { items: typeof MENU; label: string; onNavigate?: () => void }) {
   return (
     <div>
-      <div className="text-[11px] font-semibold uppercase tracking-[0.14em] mb-2 px-3 opacity-45">{label}</div>
+      <div className="text-[10px] font-semibold uppercase tracking-[0.14em] mb-1 px-3 opacity-45">{label}</div>
       <nav className="flex flex-col gap-0.5">
         {items.map(({ to, label, Icon }) => (
           <NavLink
             key={to}
             to={to}
             onClick={onNavigate}
-            className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[15px] transition-all duration-200"
+            className="group flex items-center gap-3 px-3 py-[7px] rounded-xl text-[14px] transition-all duration-200"
             style={({ isActive }) => ({
               color: isActive ? 'var(--color-accent)' : 'var(--color-sidebar-text)',
               fontWeight: isActive ? 600 : 450,
@@ -54,7 +54,7 @@ function Section({ items, label, onNavigate }: { items: typeof MENU; label: stri
               <>
                 <span className="transition-transform duration-200 group-hover:scale-110"
                   style={{ color: isActive ? 'var(--color-accent)' : 'var(--color-sidebar-text)', opacity: isActive ? 1 : 0.75 }}>
-                  <Icon width={20} height={20} />
+                  <Icon width={18} height={18} />
                 </span>
                 <span>{label}</span>
               </>
@@ -78,7 +78,7 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <aside
-      className="w-[270px] h-full overflow-y-auto px-5 py-7 flex flex-col"
+      className="w-[260px] h-full overflow-y-auto px-4 py-5 flex flex-col"
       style={{
         background: 'linear-gradient(180deg, var(--color-sidebar) 0%, var(--color-sidebar-2) 100%)',
         color: 'var(--color-sidebar-text)',
@@ -87,23 +87,22 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     >
       <div className="px-1">
         <div className="flex items-baseline gap-1.5 tnum">
-          <span className="text-4xl font-light tracking-tight">{hour}:{minute}</span>
-          <span className="text-sm font-medium opacity-60">{ampm}</span>
+          <span className="text-[28px] leading-none font-light tracking-tight">{hour}:{minute}</span>
+          <span className="text-xs font-medium opacity-60">{ampm}</span>
+          <span className="text-[11px] ml-auto opacity-55 tracking-wide self-center">{weekday}, {monthDay}</span>
         </div>
-        <div className="text-[12px] mt-1 opacity-55 tracking-wide">{weekday}, {monthDay}</div>
       </div>
 
-      <div className="font-signature leading-[0.9] mt-7 mb-9 select-none px-1" style={{ fontSize: '52px' }}>
-        {first}<br />
-        <span style={{ marginLeft: '0.4em' }}>{rest.join(' ') || ''}</span>
+      <div className="font-signature leading-[0.95] mt-3 mb-5 select-none px-1" style={{ fontSize: rest.length ? '38px' : '42px' }}>
+        {first}{rest.length > 0 && <><br /><span style={{ marginLeft: '0.4em' }}>{rest.join(' ')}</span></>}
       </div>
 
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-3">
         <Section items={MENU} label="Menu" onNavigate={onNavigate} />
         <Section items={PREFS} label="Preferences" onNavigate={onNavigate} />
       </div>
 
-      <div className="mt-auto pt-8 text-[11px] opacity-35 px-3">Made with love</div>
+      <div className="mt-auto pt-4 text-[11px] opacity-30 px-3">Made with love 💜</div>
     </aside>
   )
 }
