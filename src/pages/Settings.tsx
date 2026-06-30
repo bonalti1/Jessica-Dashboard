@@ -1,7 +1,63 @@
+import { useEffect, useState } from 'react'
 import { Card, PageHeader, Button, Input } from '../components/ui'
 import { useTheme, PRESETS, type Theme } from '../lib/theme'
 import { useStore } from '../lib/store'
 import { CURRENCIES } from '../lib/format'
+
+type StatusFlags = { openai?: boolean; rapidapi?: boolean; plaid?: boolean; googleCalendar?: boolean; push?: boolean }
+
+const INTEGRATIONS: { key: keyof StatusFlags; name: string; desc: string; setup: string }[] = [
+  { key: 'openai', name: 'AI Assistant (OpenAI)', desc: 'Powers Ask AI and Wishlist pros/cons & "help me decide".', setup: 'Add OPENAI_API_KEY in Netlify' },
+  { key: 'googleCalendar', name: 'Google Calendar', desc: 'Two-way sync of real events into the Calendar.', setup: 'Authorize the connector + add GOOGLE_CLIENT_ID' },
+  { key: 'plaid', name: 'Plaid (Bank)', desc: 'Live balances and deposits from her real accounts.', setup: 'Add PLAID_CLIENT_ID and PLAID_SECRET' },
+  { key: 'rapidapi', name: 'Live Product Search', desc: 'Type a product and get live prices, ratings & similar items.', setup: 'Add RAPIDAPI_KEY in Netlify' },
+  { key: 'push', name: 'Phone Push Notifications', desc: 'Send reminders to her phone, even when the app is closed.', setup: 'Add VAPID_PUBLIC_KEY (+ a scheduler)' },
+]
+
+function IntegrationsCard() {
+  const [status, setStatus] = useState<StatusFlags | null>(null)
+  const [loading, setLoading] = useState(true)
+  useEffect(() => {
+    let alive = true
+    fetch('/.netlify/functions/status')
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((d) => { if (alive) { setStatus(d); setLoading(false) } })
+      .catch(() => { if (alive) { setStatus(null); setLoading(false) } })
+    return () => { alive = false }
+  }, [])
+
+  const badge = (connected: boolean | undefined) => {
+    if (loading) return { label: 'Checking…', bg: 'var(--color-bg)', fg: 'var(--color-muted)' }
+    if (connected) return { label: 'Connected', bg: 'color-mix(in srgb, #5bbf8a 22%, transparent)', fg: '#2f9266' }
+    if (status === null) return { label: 'Deploy to check', bg: 'var(--color-bg)', fg: 'var(--color-muted)' }
+    return { label: 'Not connected', bg: 'color-mix(in srgb, #e0a35a 22%, transparent)', fg: '#c98a3c' }
+  }
+
+  return (
+    <Card className="p-5 mb-6">
+      <h2 className="font-bold text-lg mb-1" style={{ color: 'var(--color-text)' }}>Integrations</h2>
+      <p className="text-sm mb-4" style={{ color: 'var(--color-muted)' }}>Connect external services. Keys live securely on the server — never in the app.</p>
+      <ul className="flex flex-col gap-2">
+        {INTEGRATIONS.map((it) => {
+          const b = badge(status?.[it.key])
+          const connected = !!status?.[it.key]
+          return (
+            <li key={it.key} className="flex items-start gap-3 p-3 rounded-xl" style={{ background: 'var(--color-bg)' }}>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold" style={{ color: 'var(--color-text)' }}>{it.name}</span>
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: b.bg, color: b.fg }}>{b.label}</span>
+                </div>
+                <p className="text-sm mt-0.5" style={{ color: 'var(--color-muted)' }}>{it.desc}</p>
+                {!connected && <p className="text-xs mt-1" style={{ color: 'var(--color-accent)' }}>Setup: {it.setup}</p>}
+              </div>
+            </li>
+          )
+        })}
+      </ul>
+    </Card>
+  )
+}
 
 const FIELDS: { key: keyof Theme; label: string }[] = [
   { key: 'sidebar', label: 'Sidebar (top)' },
@@ -57,6 +113,8 @@ export default function Settings() {
           <Button variant="outline" onClick={install}>📲 Install app on this device</Button>
         </div>
       </Card>
+
+      <IntegrationsCard />
 
       <div className="grid md:grid-cols-2 gap-6">
         <Card className="p-5">

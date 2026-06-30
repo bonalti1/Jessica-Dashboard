@@ -97,12 +97,13 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         {first}{rest.length > 0 && <><br /><span style={{ marginLeft: '0.4em' }}>{rest.join(' ')}</span></>}
       </div>
 
-      <div className="flex flex-col gap-3">
+      {/* Nav fills the remaining height: Menu at the top, Preferences anchored low. */}
+      <div className="flex-1 flex flex-col justify-between min-h-0 gap-4">
         <Section items={MENU} label="Menu" onNavigate={onNavigate} />
         <Section items={PREFS} label="Preferences" onNavigate={onNavigate} />
       </div>
 
-      <div className="mt-auto pt-4 text-[11px] opacity-30 px-3">Made with love 💜</div>
+      <div className="pt-4 text-[11px] opacity-30 px-3 shrink-0">Made with love 💜</div>
     </aside>
   )
 }
