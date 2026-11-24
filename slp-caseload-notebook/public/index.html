@@ -1,0 +1,761 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SLP Caseload Notebook</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f5fb;color:#242538;font:16px system-ui}header{padding:22px clamp(20px,5vw,72px);background:#292449;color:white;font-size:21px;font-weight:700}header small{display:block;color:#dfd8ff;font-size:13px;font-weight:500;margin-top:5px}.layout{max-width:1300px;margin:auto;display:grid;grid-template-columns:240px minmax(0,1fr);gap:30px;padding:30px}aside,article,fieldset{background:white;border:1px solid #e2dff0;border-radius:14px;padding:18px;margin:0 0 14px}aside{align-self:start}h1,h2,h3,p{margin:0 0 12px}h1{font-size:32px}h2{font-size:21px}h3{font-size:17px}.muted{color:#615c73}.eyebrow{color:#5946a4;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.08em}button,input,select,textarea{font:inherit}button{border:1px solid #dcd5ef;border-radius:8px;padding:8px 12px;background:#fff;color:#382968;cursor:pointer}button[aria-current=true],button.primary{background:#5946a4;color:#fff;border-color:#5946a4}aside button{width:100%;margin:4px 0;text-align:left}nav,.row,.checks{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}.row>*{flex:1;min-width:125px}input:not([type=checkbox]),select,textarea{display:block;width:100%;border:1px solid #c9c2dc;border-radius:8px;padding:9px;background:white;color:inherit}textarea{min-height:90px}label{display:block;font-size:14px;font-weight:600;margin-bottom:10px}.checks label{margin:0;background:#f0edf9;padding:6px 8px;border-radius:6px}fieldset{min-width:0}legend{font-weight:700;max-width:100%;padding:0 6px}.detail{white-space:pre-wrap;overflow-wrap:anywhere}.notice{background:#ece7fb;padding:10px 13px;border-radius:8px;margin-bottom:15px;font-size:14px}output{display:block;color:#4d3c90;margin:10px 0;font-weight:600}.item{border-top:1px solid #e5e1f1;padding:14px 0}.item:last-child{padding-bottom:0}.item p{margin:5px 0}details{margin:12px 0}summary{cursor:pointer;color:#5946a4;font-weight:650;margin-bottom:10px}@media(max-width:720px){.layout{display:block;padding:16px}aside{margin-bottom:16px}}
+
+#patients{max-height:23rem;overflow:auto}
+#feedback:not(:empty){margin:0 0 12px;color:#4d3c90;font-weight:600}
+.session-layout{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start}
+.session-goal{padding:10px 12px;margin:0 0 14px;background:#f7f5fd;border:1px solid #e2dff0;border-radius:8px}
+.session-goal .row>*{min-width:min(100%,95px)}
+.assessment{border-top:1px solid #e5e1f1;padding:14px 0 2px}
+.assessment h3{margin-bottom:6px}.assessment details{margin:8px 0}
+.mobile-session-link{display:none}
+@media(max-width:880px){.session-layout{display:block}.mobile-session-link{display:inline-block;margin-bottom:12px;color:#5946a4}}
+@media(max-width:720px){#patients{max-height:10rem}}
+#authPanel{max-width:380px;margin:40px auto;padding:24px;background:#fff;border:1px solid #e2dff0;border-radius:12px}
+#authPanel h2{margin:0 0 6px}#authPanel p{margin:0 0 14px;color:#5b5c72;font-size:14px}
+#authPanel label{display:block;margin:0 0 12px;font-size:14px}#authPanel input{display:block;width:100%;margin-top:4px;padding:9px;font:inherit;border:1px solid #cfcbe3;border-radius:6px}
+#authPanel .auth-actions{display:flex;gap:8px;flex-wrap:wrap}#authMsg:not(:empty){margin-top:12px;color:#4d3c90;font-weight:600}
+#signOut{float:right;margin-top:2px;background:transparent;color:#dfd8ff;border:1px solid #6d63a8;border-radius:6px;padding:5px 10px;font:13px system-ui;cursor:pointer}
+[hidden]{display:none!important}
+#openSettings{float:right;margin:2px 8px 0 0;background:transparent;color:#dfd8ff;border:1px solid #6d63a8;border-radius:6px;padding:5px 10px;font:13px system-ui;cursor:pointer}
+.ai-row{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}.ai-status{color:#4d3c90;font-size:14px;font-weight:600}
+#settingsDialog{width:min(760px,calc(100vw - 32px));max-height:calc(100vh - 48px);border:1px solid #d9d4ee;border-radius:12px;padding:0;color:#242538}
+#settingsDialog::backdrop{background:rgba(30,25,60,.45)}
+#settingsDialog .sd-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:#292449;color:#fff;position:sticky;top:0}
+#settingsDialog .sd-head h2{margin:0;font-size:18px}#settingsDialog .sd-head button{background:transparent;color:#fff;border:1px solid #6d63a8;border-radius:6px;padding:4px 10px;cursor:pointer}
+#settingsDialog .sd-body{padding:4px 20px 20px}#settingsDialog section{border-bottom:1px solid #ebe8f5;padding:14px 0}
+#settingsDialog label{display:block;margin:8px 0;font-size:14px}#settingsDialog input,#settingsDialog select,#settingsDialog textarea{display:block;width:100%;margin-top:4px;padding:8px;font:inherit;border:1px solid #cfcbe3;border-radius:6px}
+#settingsDialog .muted{color:#5b5c72;font-size:14px;margin:4px 0}
+.sample{border:1px solid #e2dff0;border-radius:8px;padding:10px 12px;margin:8px 0;background:#faf9fe}
+.sample header{all:unset;display:flex;gap:8px;align-items:center;font-weight:600;font-size:14px}.sample .kind{font-size:12px;background:#ece8fb;color:#4d3c90;border-radius:999px;padding:2px 8px}
+.sample p{margin:6px 0 0;font-size:14px;white-space:pre-wrap;max-height:7.5em;overflow:auto}.sample button{margin-left:auto}
+</style>
+<header><button id="signOut" type="button" hidden>Sign out</button><button id="openSettings" type="button" hidden>Settings &amp; AI</button>SLP Caseload Notebook<small>Fictional records only · Syncs across devices after a successful save</small></header>
+<p id="sync" class="notice" role="status" style="margin:12px 18px">Loading synced demo…</p><div id="workspace" class="layout" inert><aside><h2>Caseload</h2><div id="patients"></div><form id="addPatient"><label>Demo patient label<input name="name" required placeholder="e.g. Demo C"></label><button>Add demo patient</button></form><details id="importPanel"><summary>Import demo goals</summary><form id="importGoals"><label>Fictional goals JSON file<input type="file" name="file" accept=".json,application/json" required></label><button>Import goals</button></form></details></aside><main id="main"></main></div>
+<section id="authPanel" hidden><h2>Sign in</h2><p>Your notebook is private to your account and syncs across devices.</p>
+<form id="authForm"><label>Email<input name="email" type="email" autocomplete="email" required></label>
+<label>Password<input name="password" type="password" autocomplete="current-password" minlength="8" required></label>
+<div class="auth-actions"><button name="mode" value="in">Sign in</button><button name="mode" value="up" type="submit">Create account</button><button name="mode" value="reset" type="submit" formnovalidate>Forgot password</button></div>
+<div id="authMsg" role="status"></div></form></section>
+<script src="/supabase.min.js"></script>
+<script>
+'use strict';
+// Supabase sign-in. Resolves authReady once a user session exists.
+let sb=null, resolveAuth;
+const authReady=new Promise(r=>resolveAuth=r);
+async function apiFetch(url,init={}){
+ const {data}=await sb.auth.getSession();
+ const token=data.session?.access_token;
+ const res=await fetch(url,{...init,headers:{...(init.headers||{}),...(token?{Authorization:'Bearer '+token}:{})}});
+ if(res.status===401){await sb.auth.signOut();location.reload();}
+ return res;
+}
+(async()=>{
+ const panel=document.querySelector('#authPanel'),msg=document.querySelector('#authMsg'),out=document.querySelector('#signOut'),sync=document.querySelector('#sync');
+ let cfg;
+ try{cfg=await (await fetch('/api/config',{cache:'no-store'})).json();}catch{}
+ if(!cfg?.supabaseUrl||!cfg?.supabaseAnonKey){sync.textContent='Server is not configured yet (missing Supabase settings).';return;}
+ sb=supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+ const ws=document.querySelector('#workspace');
+ const ready=()=>{panel.hidden=true;out.hidden=false;document.querySelector('#openSettings').hidden=false;sync.hidden=false;ws.hidden=false;resolveAuth();};
+ out.onclick=async()=>{await sb.auth.signOut();location.reload();};
+ sb.auth.onAuthStateChange((event,session)=>{
+  if(event==='PASSWORD_RECOVERY'){const pw=prompt('Enter a new password (8+ characters):');if(pw)sb.auth.updateUser({password:pw}).then(({error})=>alert(error?error.message:'Password updated.'));}
+  if(session)ready();
+ });
+ const {data}=await sb.auth.getSession();
+ if(data.session)return ready();
+ sync.hidden=true;ws.hidden=true;panel.hidden=false;
+ document.querySelector('#authForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const mode=e.submitter?.value||'in',f=Object.fromEntries(new FormData(e.target));
+  msg.textContent='Working…';
+  let r;
+  if(mode==='reset'){
+   if(!f.email){msg.textContent='Enter your email first.';return;}
+   r=await sb.auth.resetPasswordForEmail(f.email,{redirectTo:location.origin});
+   msg.textContent=r.error?r.error.message:'Check your email for a reset link.';return;
+  }
+  r=mode==='up'?await sb.auth.signUp({email:f.email,password:f.password,options:{emailRedirectTo:location.origin}})
+               :await sb.auth.signInWithPassword({email:f.email,password:f.password});
+  if(r.error){msg.textContent=r.error.message;return;}
+  if(mode==='up'&&!r.data.session){msg.textContent='Account created. Check your email to confirm, then sign in.';return;}
+  msg.textContent='';
+ });
+})();
+</script>
+<script>
+'use strict';
+const id=()=>crypto.randomUUID();
+const today=()=>new Intl.DateTimeFormat('en-CA',{year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+const seed=[
+ {id:'a',name:'Demo Patient A',background:'Receives speech therapy targeting functional communication through AAC.',goals:[{id:'g1',text:'Use AAC to request during familiar play routines.'},{id:'g2',text:'Follow one-step directions during structured play.'}],updates:[{id:'u1',date:'2026-11-12',type:'Procedure',status:'Scheduled',title:'ENT follow-up',details:'Caregiver reported that an ENT visit was scheduled.',result:'',source:'Caregiver report'}],sessions:[]},
+ {id:'b',name:'Demo Patient B',background:'Receives speech therapy targeting speech sound production.',goals:[{id:'g3',text:'Produce target sounds in initial position at the word level.'}],updates:[],sessions:[]}
+];
+let patients=structuredClone(seed), revision=0;
+const syncMessage=document.querySelector('#sync');
+const workspace=document.querySelector('#workspace');
+let selected=patients[0].id,tab='Medical updates',editUpdate=null;
+const patient=()=>patients.find(p=>p.id===selected);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const options=(values,value)=>values.map(v=>'<option'+(v===value?' selected':'')+'>'+esc(v)+'</option>').join('');
+const dateLabel=d=>new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+const sorted=rows=>[...rows].sort((a,b)=>b.date.localeCompare(a.date));
+const cues=['Verbal cue','Visual cue','Gestural cue','Modeling','Prompting','Repetition','Imitation','Tactile cue','Corrective feedback','Positive feedback'];
+const tabs=['Medical updates','Goals','Session entry','Re-evaluation'];
+const fields=form=>Object.fromEntries(new FormData(form));
+async function save(message, refresh=render){
+ workspace.inert=true;
+ syncMessage.textContent='Saving demo changes…';
+ const body=JSON.stringify({revision,patients});
+ const attempt=async()=>{
+  try {
+   const res=await apiFetch('/api/notebook',{method:'PUT',headers:{'Content-Type':'application/json'},body});
+   if(res.status===409){
+    syncMessage.textContent='Another device saved a newer version. Reload to get that version. This change was not saved.';
+    return;
+   }
+   if(!res.ok)throw new Error('Save failed');
+   revision=(await res.json()).revision;
+   refresh();
+   workspace.inert=false;
+   syncMessage.textContent='Synced. Open or refresh this site on your other device.';
+   document.querySelector('#feedback').textContent=message;
+  } catch {
+   syncMessage.textContent='Could not confirm the save. ';
+   const retry=document.createElement('button');
+   retry.textContent='Retry save';
+   retry.addEventListener('click',()=>{syncMessage.textContent='Retrying save…';attempt();});
+   syncMessage.append(retry);
+  }
+ };
+ await attempt();
+}
+function renderCaseload(){
+ document.querySelector('#patients').innerHTML=patients.map(q=>'<button data-patient="'+q.id+'" aria-current="'+(q.id===selected)+'">'+esc(q.name)+'</button>').join('');
+}
+function render(){
+ const p=patient();
+ renderCaseload();
+ document.querySelector('#main').innerHTML='<p class="eyebrow">Patient workspace</p><h1 id="patientName">'+esc(p.name)+'</h1><details id="editName"><summary>Edit patient name</summary><form id="renamePatient"><label>Fictional patient name<input name="name" required value="'+esc(p.name)+'"></label><button>Save name</button></form></details><nav aria-label="Patient workspace">'+tabs.map(t=>'<button data-tab="'+t+'" aria-current="'+(tab===t)+'">'+t+'</button>').join('')+'</nav><div id="feedback" role="status"></div>'+views[tab](p);
+}
+function updateText(u){
+ return dateLabel(u.date)+' · '+u.type+' · '+u.status+' · '+u.title+(u.source?' ('+u.source+')':'')+(u.details?'\n'+u.details:'')+(u.result?'\nResult: '+u.result:'');
+}
+const views={
+ 'Medical updates':p=>{
+  const u=p.updates.find(x=>x.id===editUpdate);
+  return '<article><h2>'+ (u?'Update medical entry':'Add medical update')+'</h2><form id="update"><div class="row"><label>Event date<input name="date" type="date" required value="'+(u?.date||today())+'"></label><label>Type<select name="type">'+options(['Procedure','Visit','Test','Medication','Other'],u?.type)+'</select></label><label>Status<select name="status">'+options(['Reported','Scheduled','Completed','Canceled'],u?.status)+'</select></label></div><div class="row"><label>Event or procedure<input name="title" required value="'+esc(u?.title)+'"></label><label>Source<input name="source" placeholder="e.g. caregiver report" value="'+esc(u?.source)+'"></label></div><label>Details<textarea name="details">'+esc(u?.details)+'</textarea></label><label>Results or follow-up<textarea name="result">'+esc(u?.result)+'</textarea></label><button class="primary">Save update</button> '+(u?'<button type="button" data-cancel>Cancel edit</button>':'')+'</form></article><article><h2>Medical timeline</h2>'+(sorted(p.updates).map(x=>'<div class="item"><p class="detail">'+esc(updateText(x))+'</p><button data-edit-update="'+x.id+'">Edit update</button></div>').join('')||'<p class="muted">No medical updates yet.</p>')+'</article>';
+ },
+ 'Goals':p=>'<article><h2>Background information</h2><form id="background"><label>Patient background<textarea name="background">'+esc(p.background)+'</textarea></label><button>Save background</button></form></article><article><h2>Patient goals</h2>'+p.goals.map(g=>'<form class="item" data-goal="'+g.id+'"><label>Goal<textarea name="text" required>'+esc(g.text)+'</textarea></label><button>Save changes</button> <button type="button" data-archive="'+g.id+'">'+(g.archived?'Reactivate goal':'Archive goal')+'</button></form>').join('')+'<form id="goal" class="item"><label>New goal<textarea name="text" required></textarea></label><button class="primary">Add goal</button></form></article>',
+ 'Session entry':p=>{
+  const active=p.goals.filter(g=>!g.archived);
+  const goals=active.map(g=>'<fieldset class="session-goal" data-session-goal="'+g.id+'"><legend>'+esc(g.text)+'</legend><div class="row"><label>Measure<select name="measure"><option value="percent">Percentage</option><option value="trials">Correct / total</option></select></label><label data-trials hidden>Correct<input name="correct" type="number" min="0" step="1" disabled></label><label data-trials hidden>Total<input name="total" type="number" min="1" step="1" disabled></label><label data-percent>Accuracy (%)<input name="percent" type="number" inputmode="decimal" min="0" max="100" step="any"></label></div><output></output><label>Cueing level<select name="level">'+options(['','Independent','Minimal','Moderate','Maximal'])+'</select></label><div class="checks">'+cues.map(c=>'<label><input type="checkbox" value="'+c+'"> '+c+'</label>').join('')+'</div><label>Materials or activity<input name="materials" placeholder="e.g. core board to request “more” and “stop”"></label><label>Patient response<input name="observation" placeholder="e.g. refused to bring the cup to his mouth"></label></fieldset>').join('');
+  return '<div class="session-layout"><article id="new-session"><h2>New session</h2>'+
+   '<a class="mobile-session-link" href="#saved-assessments">Jump to saved assessments</a>'+
+   '<form id="session"><label>Session date<input name="date" type="date" required value="'+today()+'"></label>'+
+   '<h3>Session goals ('+active.length+')</h3>'+(goals||'<p class="muted">Add goals in the Goals tab.</p>')+
+   '<label>Additional clinical observations (optional)<textarea name="note" placeholder="Add details to include in the generated assessment."></textarea></label>'+
+   '<button class="primary">Save session</button></form></article>'+
+   '<article id="saved-assessments">'+savedAssessments(p)+'</article></div>';
+ },
+ 'Re-evaluation':p=>'<article><h2>Re-evaluation draft</h2><p class="muted">Choose your review period and the medical updates to include. Background and session data are pulled from this patient’s record.</p><form id="review"><div class="row"><label>From<input type="date" name="from"></label><label>Through<input type="date" name="through" value="'+today()+'"></label></div>'+sorted(p.updates).map(u=>'<label><input type="checkbox" name="updates" value="'+u.id+'" checked> '+esc(dateLabel(u.date)+' · '+u.title+' · '+u.status)+'</label>').join('')+'<button class="primary">Build draft</button></form><details id="draftPanel"><summary>Editable draft</summary><label>Re-evaluation text<textarea id="draft" rows="14"></textarea></label><button data-copy>Copy draft</button> <button type="button" data-ai-reeval>✨ Rewrite with AI</button> <button type="button" data-sample-from="reevaluation">Save as sample</button><div id="copyStatus" class="ai-status" role="status"></div></details></article>'
+};
+function savedAssessments(patient){
+ const entries=sorted(patient.sessions.map((session,index)=>({...session,index})).reverse());
+ const active=entries.filter(session=>!session.deleted);
+ const deleted=entries.filter(session=>session.deleted);
+ const history=active.map(session=>{
+  const comment=assessmentText(session);
+  const results=session.data.map(result=>'<p class="detail">'+esc([result.goal,metric(result),result.level,...result.cues,result.materials,result.observation].filter(Boolean).join(' · '))+'</p>').join('');
+  return '<section class="assessment"><h3>'+esc(dateLabel(session.date))+'</h3>'+
+   '<p data-assessment-comment class="'+(comment?'detail':'muted')+'">'+esc(comment||'No assessment comment entered.')+'</p>'+
+   '<details><summary>Edit assessment comments</summary><form data-assessment-edit="'+session.index+'">'+
+   '<label>Assessment comments<textarea name="comment" rows="6">\n'+esc(comment)+'</textarea></label>'+
+   '<button class="primary">Save comments</button> <button type="button" data-cancel-assessment>Cancel</button>'+
+   '<div class="ai-row"><button type="button" data-ai-assessment>✨ Draft with AI</button> <button type="button" data-sample-from="assessment">Save as sample</button> <span class="ai-status" role="status"></span></div>'+
+   '</form></details>'+
+   (results?'<details><summary>Goal results ('+session.data.length+')</summary>'+results+'</details>':'')+
+   '<details><summary>Session options</summary><button type="button" data-delete-session="'+session.index+'">Delete session</button></details></section>';
+ }).join('');
+ const trash=deleted.map(session=>'<section class="assessment"><h3>'+esc(dateLabel(session.date))+'</h3>'+
+  '<p class="detail">'+esc(assessmentText(session))+'</p>'+
+  '<button type="button" data-restore-session="'+session.index+'">Restore session</button></section>').join('');
+ return '<h2 tabindex="-1">Saved assessments</h2><a class="mobile-session-link" href="#new-session">Back to new session</a>'+
+  (history||'<p class="muted">No sessions saved yet.</p>')+
+  (trash?'<details id="deleted-sessions"><summary>Deleted sessions ('+deleted.length+')</summary>'+trash+'</details>':'');
+}
+function metric(d){return d.correct!==''?d.correct+'/'+d.total+' ('+d.percent+'%)':d.percent!==''?d.percent+'%':'';}
+const clinicalList=new Intl.ListFormat('en-US',{type:'conjunction'});
+function previousAssessment(data){
+ if(!data.length)return '';
+ const goalCodes=data.map(d=>d.goal.match(/^(\d+\s*(?:[A-Z]|-\d+))\./i)?.[1].replace(/\s/g,''));
+ const target=goalCodes.every(Boolean)
+  ? 'Patient worked on '+(goalCodes.length===1?'goal ':'goals ')+clinicalList.format(goalCodes)+'.'
+  : 'Patient worked on the documented treatment goals.';
+ const supportGroups=new Map();
+ data.forEach((d,i)=>{
+  const level=d.level&&d.level!=='Independent'?d.level.toLowerCase()+' cueing':'';
+  const support=clinicalList.format([level,...d.cues.map(c=>c.toLowerCase().replace(/ cue$/,' cues'))].filter(Boolean));
+  if(!support)return;
+  const codes=supportGroups.get(support)||[];
+  codes.push(goalCodes[i]);
+  supportGroups.set(support,codes);
+ });
+ const support=[...supportGroups].map(([text,codes])=>{
+  const goalLabel=codes.every(Boolean)?' for '+(codes.length===1?'goal ':'goals ')+clinicalList.format(codes):'';
+  return 'Clinician used '+text+goalLabel+'.';
+ });
+ const independent=data.flatMap((d,i)=>d.level==='Independent'&&goalCodes[i]?[goalCodes[i]]:[]);
+ if(independent.length)support.push('Independent performance was recorded for '+(independent.length===1?'goal ':'goals ')+clinicalList.format(independent)+'.');
+ else if(data.some(d=>d.level==='Independent'))support.push('Independent performance was recorded on at least one goal.');
+ const observations=data.filter(d=>d.observation).map(d=>/[.!?]$/.test(d.observation)?d.observation:d.observation+'.');
+ return [target,...support,...observations].filter(Boolean).join(' ');
+}
+const goalTargets=[
+ [/food-based play|food play|exploration of .*foods|sensory exploration/i,'food play and exploration'],
+ [/controlled sips|drinking method|straw|open cup|training cup/i,'drinking skills'],
+ [/munching|chew|lateralization|oral manipulation/i,'oral manipulation'],
+ [/labial closure|labial seal|spoon stripping/i,'lip closure'],
+ [/one-step (?:commands|directions)|1-step (?:commands|directions)/i,'following one-step directions'],
+ [/functional play|appropriate toy use/i,'functional play'],
+ [/request/i,'functional requesting'],
+ [/label(?:ing)? (?:of )?(?:common )?objects|label common/i,'labeling objects'],
+ [/identify(?:ing)? (?:common )?objects/i,'identifying objects'],
+ [/home exercise program|home program/i,'the home program']
+];
+function goalTarget(goal){
+ return goalTargets.find(([pattern])=>pattern.test(goal))?.[1];
+}
+function observationSentence(text,version){
+ if(!text)return '';
+ const startsWithPatientAction=/^(accepted|attempted|demonstrated|engaged|followed|identified|imitated|initiated|labeled|participated|produced|requested|responded|tolerated|used)\b/i.test(text);
+ const startsWithPlayAction=version===3&&/^(stacked|placed|matched|sorted|reached|touched|manipulated|selected|removed|assembled)\b/i.test(text);
+ const sentence=(startsWithPatientAction||startsWithPlayAction)?'Patient '+text[0].toLowerCase()+text.slice(1):text[0].toUpperCase()+text.slice(1);
+ return /[.!?]$/.test(sentence)?sentence:sentence+'.';
+}
+function recordedMaterial(text){
+ const value=text?.trim().replace(/[.!?]$/,'')||'';
+ const explicit=value.match(/^(?:I|(?:the )?clinician|(?:the )?therapist) used (.+)$/i);
+ if(explicit&&!/[.!?;]|\b(?:patient|child|caregiver|he|she|they)\b/i.test(explicit[1]))return explicit[1];
+ const fragment=value.match(/^(?:used )?((?:stacking cups|blocks|bubbles|picture cards|toy cars|a puzzle|play dough|play-doh)(?: and (?:stacking cups|blocks|bubbles|picture cards|toy cars|a puzzle|play dough|play-doh))*)$/i);
+ return fragment?.[1].toLowerCase()||'';
+}
+function materialNarrative(data,extra){
+ const byMaterial=new Map();
+ for(const result of data){
+  const material=result.materials||recordedMaterial(result.observation);
+  if(!material)continue;
+  const targets=byMaterial.get(material)||new Set();
+  targets.add(goalTarget(result.goal));
+  byMaterial.set(material,targets);
+ }
+ const sessionMaterial=recordedMaterial(extra);
+ if(sessionMaterial&&!byMaterial.has(sessionMaterial))byMaterial.set(sessionMaterial,new Set(data.length===1?[goalTarget(data[0].goal)]:[]));
+ const clauses=[...byMaterial].map(([material,targets])=>{
+  const named=[...targets].filter(Boolean);
+  return {material,focus:named.length&&!targets.has(undefined)?clinicalList.format(named):''};
+ });
+ return {clauses,sessionMaterial};
+}
+function earlierNarrative(data,extra,version){
+ if(!data.length){
+  const material=version===3&&recordedMaterial(extra);
+  return material?'Clinician used '+material+' during the session.':extra;
+ }
+ const {clauses,sessionMaterial}=version===3?materialNarrative(data,extra):{clauses:[],sessionMaterial:''};
+ const targets=[...new Set(data.map(d=>goalTarget(d.goal)).filter(Boolean))];
+ const focus=clinicalList.format(targets);
+ const combined=clauses.length===1&&focus&&clauses[0].focus===focus&&data.every(d=>goalTarget(d.goal));
+ const intro=combined?'Clinician targeted '+focus+' using '+clauses[0].material:'';
+ const narrative=[intro?intro+'.':focus?'Session targeted '+focus+'.':''];
+ if(!combined)for(const {material,focus} of clauses){
+  narrative.push('Clinician used '+material+(focus?' to target '+focus:' during the session')+'.');
+ }
+ const groups=new Map();
+ const independent=new Set();
+ let supportedResults=0;
+ for(const result of data){
+  const target=goalTarget(result.goal);
+  const level=result.level&&result.level!=='Independent'?result.level.toLowerCase():'';
+  const cueTypes=result.cues.filter(c=>c.endsWith(' cue')).map(c=>c.slice(0,-4).toLowerCase());
+  const strategies=result.cues.filter(c=>!c.endsWith(' cue')).map(c=>c.toLowerCase());
+  const cueing=cueTypes.length?[level,clinicalList.format(cueTypes),'cues'].filter(Boolean).join(' '):level?level+' cueing':'';
+  const support=clinicalList.format([cueing,...strategies].filter(Boolean));
+  if(support){
+   supportedResults++;
+   if(!groups.has(support))groups.set(support,new Set());
+   groups.get(support).add(target);
+  }
+  if(result.level==='Independent'&&!support)independent.add(target);
+ }
+ for(const [support,groupTargets] of groups){
+  const named=[...groupTargets].filter(Boolean);
+  const coversSession=groups.size===1&&supportedResults===data.length&&named.length&&!groupTargets.has(undefined);
+  if(coversSession)narrative[0]=intro?intro+' and provided '+support+'.':'Session targeted '+focus+' with '+support+'.';
+  else narrative.push('Clinician provided '+support+(named.length&&!groupTargets.has(undefined)?' during practice targeting '+clinicalList.format(named):'')+'.');
+ }
+ if(independent.size){
+  const named=[...independent].filter(Boolean);
+  narrative.push(named.length&&!independent.has(undefined)
+   ?'Independent responses were noted during practice targeting '+clinicalList.format(named)+'.'
+   :'Independent responses were noted during the session.');
+ }
+ const observations=[...new Set(data.map(d=>version===3&&recordedMaterial(d.observation)?'':observationSentence(d.observation,version)))].filter(Boolean);
+ return [...narrative,...observations,sessionMaterial?'':extra].filter(Boolean).join(' ')||'Session data were recorded for the goals addressed.';
+}
+function assessmentMaterial(text){
+ const board=text?.trim().replace(/[.!?]$/,'').match(/^(?:(?:I )?used )?(?:a |the )?(core board(?: to request ["“]?more["”]?)?)$/i);
+ return board?.[1].toLowerCase()||recordedMaterial(text);
+}
+function activityPhrase(target,material){
+ if(!material)return target;
+ const board=material.match(/^(?:a |the )?core board(?: to request (["“]?more["”]?))?$/i);
+ if(board){
+  if(board[1]&&target==='functional requesting')return 'requesting “more” using a core board';
+  material='a core board';
+ }
+ return (target||'practice')+' using '+material;
+}
+function sharedSupport(level,cues){
+ const names=cues.map(c=>c.toLowerCase().replace(/ cue$/,' cues'));
+ const support=clinicalList.format(names);
+ if(level==='Independent')return support?'with '+support:'independently';
+ if(!level)return support?'with '+support:'';
+ const intensity=level.toLowerCase();
+ if(!support)return 'with '+intensity+' cueing';
+ return names.every(c=>c.endsWith(' cues'))
+  ?'with '+intensity+' '+clinicalList.format(names.map(c=>c.slice(0,-5)))+' cues'
+  :'with '+intensity+' support through '+support;
+}
+function previousGroupedAssessment(data,extra=''){
+ const sessionMaterial=assessmentMaterial(extra);
+ if(!data.length)return sessionMaterial?'Clinician used '+sessionMaterial+' during the session.':extra;
+ const groups=new Map();
+ const observations=new Set();
+ for(const result of data){
+  const fieldMaterial=assessmentMaterial(result.observation);
+  const material=result.materials?.trim().replace(/[.!?]$/,'')||fieldMaterial||(data.length===1?sessionMaterial:'');
+  const activity=activityPhrase(goalTarget(result.goal),material);
+  const support=sharedSupport(result.level,result.cues);
+  const activities=groups.get(support)||new Set();
+  if(activity)activities.add(activity);
+  groups.set(support,activities);
+  if(!fieldMaterial||result.materials&&material!==fieldMaterial){
+   const observation=observationSentence(result.observation,3);
+   if(observation)observations.add(observation);
+  }
+ }
+ const narrative=[...groups].map(([support,activities])=>{
+  const focus=clinicalList.format([...activities]);
+  if(support==='independently')return focus?'Independent responses were noted during practice targeting '+focus+'.':'Independent responses were noted during the session.';
+  if(focus)return 'Session targeted '+focus+(support?', '+support:'')+'.';
+  return support?'Clinician supported practice '+support+'.':'';
+ });
+ if(sessionMaterial&&data.length>1)narrative.push('Clinician used '+sessionMaterial+' during the session.');
+ return [...narrative,...observations,sessionMaterial?'':extra].filter(Boolean).join(' ')||'Session data were recorded for the goals addressed.';
+}
+const assessmentSkills=[
+ [/\b(?:name|naming|label|labeling)\b.{0,65}\b(?:verbs?|actions?)\b/i,'naming actions'],
+ [/\b(?:identify|identifying|point to|select)\b.{0,65}\b(?:verbs?|actions?)\b/i,'identifying actions'],
+ [/\b(?:use|using|utilize|utilizing|produce|producing)\b.{0,65}\bpast[- ]tense verbs?\b/i,'using past-tense verbs'],
+ [/\b(?:use|using|utilize|utilizing|produce|producing)\b.{0,65}\bverbs?\b/i,'using verbs'],
+ [/\b(?:describe|describing)\b.{0,45}\bactions?\b/i,'describing actions'],
+ [/\b(?:answer|answering)\b.{0,30}\bwh[- ]questions?\b/i,'answering WH questions'],
+ [/\bfollow(?:ing)?\b.{0,30}\b(?:two|2)[- ]step directions?\b/i,'following two-step directions']
+];
+const goalActions={
+ answer:'answering', describe:'describing', follow:'following', imitate:'imitating',
+ identify:'identifying', label:'labeling', name:'naming', produce:'producing',
+ respond:'responding', select:'selecting', use:'using', utilize:'using'
+};
+function assessmentSkill(goal){
+ const matched=assessmentSkills.find(([pattern])=>pattern.test(goal));
+ if(matched)return matched[1];
+ const existing=goalTarget(goal);
+ if(existing)return existing;
+ const clause=goal.replace(/^\s*\d+\s*(?:[A-Z]|-\d+)?[.)-]\s*/i,'');
+ const action=clause.match(/^(?:.*?\bwill\s+)?(answer|describe|follow|imitate|identify|label|name|produce|respond|select|use|utilize)\s+(.+?)(?=\s+(?:with\s+\d|in\s+\d|at\s+\d|across\s+\d|on\s+\d|given\b|with\s+(?:minimal|moderate|maximal|maximum|min|max|mod)\b|when given\b)|[.;]|$)/i);
+ if(!action)return '';
+ const object=action[2].trim();
+ if(!object||object.split(/\s+/).length>15||/\d+\s*%/.test(object))return '';
+ const wording=object===object.toUpperCase()?object.toLowerCase().replace(/\b(aac|wh|cvc|cv)\b/gi,word=>word.toUpperCase()):object;
+ return goalActions[action[1].toLowerCase()]+' '+wording;
+}
+function previousSkillAssessment(data,extra=''){
+ const sessionMaterial=assessmentMaterial(extra);
+ if(!data.length)return sessionMaterial?'Clinician used '+sessionMaterial+' during the session.':extra;
+ const activities=new Set();
+ const observations=new Set();
+ const materialsWithoutSkill=new Set();
+ for(const result of data){
+  const fieldMaterial=assessmentMaterial(result.observation);
+  const material=result.materials?.trim().replace(/[.!?]$/,'')||fieldMaterial||(data.length===1?sessionMaterial:'');
+  const skill=assessmentSkill(result.goal);
+  if(skill)activities.add(activityPhrase(skill,material));
+  else if(material)materialsWithoutSkill.add(material);
+  if(!fieldMaterial||result.materials&&material!==fieldMaterial){
+   const observation=observationSentence(result.observation,3);
+   if(observation)observations.add(observation);
+  }
+ }
+ if(sessionMaterial&&data.length>1)materialsWithoutSkill.add(sessionMaterial);
+ const focus=clinicalList.format([...activities]);
+ const otherMaterials=clinicalList.format([...materialsWithoutSkill]);
+ const narrative=[
+  focus?'Session targeted '+focus+'.':'',
+  otherMaterials?'Session activities incorporated '+otherMaterials+'.':'',
+  ...observations,
+  sessionMaterial?'':extra
+ ];
+ return narrative.filter(Boolean).join(' ')||'Session data were recorded for the goals addressed.';
+}
+function skippedGoal(result){
+ return /^\s*\*?\s*(?:not addressed|not targeted)\s*[.!]?\s*$/i.test(result.observation||'');
+}
+const feedingSkills=new Set(['food play and exploration','drinking skills','oral manipulation','lip closure']);
+const strategyLabels=new Map([
+ ['Modeling','modeling'],['Prompting','prompting'],['Repetition','repetition'],
+ ['Imitation','opportunities for imitation'],['Corrective feedback','corrective feedback'],
+ ['Positive feedback','positive feedback']
+]);
+function buildAssessment(data,extra=''){
+ const addressed=data.filter(result=>!skippedGoal(result));
+ if(!addressed.length)return extra;
+ const sections=new Map();
+ const sessionMaterial=assessmentMaterial(extra);
+ for(const result of addressed){
+  const skill=assessmentSkill(result.goal);
+  const reportedMaterial=assessmentMaterial(result.observation);
+  const material=result.materials?.trim().replace(/[.!?]$/,'')||reportedMaterial||(addressed.length===1?sessionMaterial:'');
+  const sectionKey=feedingSkills.has(skill)?'feeding':skill||'other';
+  const section=sections.get(sectionKey)||{skills:new Set(),materials:new Set(),details:new Set(),directTargets:new Set(),supports:new Set()};
+  const request=skill==='functional requesting'&&material.match(/^(?:a |the )?(core board) to request (.{1,80})$/i);
+  if(request){
+   section.directTargets.add('requesting '+request[2]+' using a core board');
+  }else{
+   if(skill)section.skills.add(skill==='food play and exploration'?'feeding-related play':skill);
+   if(material)section.materials.add(material);
+  }
+  if(!reportedMaterial||result.materials&&material!==reportedMaterial){
+   const response=observationSentence(result.observation?.replace(/^refused\b/i,'Patient refused'),3);
+   if(response)section.details.add(response);
+  }
+  const strategies=result.cues.filter(cue=>strategyLabels.has(cue)).map(cue=>strategyLabels.get(cue));
+  if(strategies.length)section.supports.add(clinicalList.format(strategies));
+  sections.set(sectionKey,section);
+ }
+ const supportUses=new Map();
+ for(const section of sections.values()){
+  for(const support of section.supports)supportUses.set(support,(supportUses.get(support)||0)+1);
+ }
+ const sentences=[];
+ for(const section of sections.values()){
+  const skills=clinicalList.format([...section.skills]);
+  const materials=clinicalList.format([...section.materials]);
+  const directTargets=clinicalList.format([...section.directTargets]);
+  const focus=clinicalList.format([skills,directTargets].filter(Boolean));
+  const localSupport=[...section.supports].filter(support=>supportUses.get(support)===1);
+  if(directTargets&&!skills&&!materials&&section.directTargets.size===1){
+   const sentence='The session targeted '+directTargets;
+   sentences.push(sentence+(localSupport.length?', with '+clinicalList.format(localSupport)+' provided during practice':'')+'.');
+   localSupport.length=0;
+  }else if(focus&&materials){
+   sentences.push('The clinician used '+materials+' to target '+focus+'.');
+  }else if(focus){
+   sentences.push('The session addressed '+focus+'.');
+  }else if(materials){
+   sentences.push('Session activities incorporated '+materials+'.');
+  }
+  sentences.push(...section.details);
+  if(localSupport.length)sentences.push('The clinician provided '+clinicalList.format(localSupport)+' during the activity.');
+ }
+ for(const [support,count] of supportUses){
+  if(count>1)sentences.push('The clinician used '+support+' across activities.');
+ }
+ if(sessionMaterial&&addressed.length>1)sentences.push('Session activities also incorporated '+sessionMaterial+'.');
+ if(extra&&!sessionMaterial)sentences.push(extra);
+ return sentences.join(' ')||'Session data were recorded for the goals addressed.';
+}
+function assessmentText(session){
+ const saved=session.note?.trim()||'';
+ if(session.assessmentEdited)return saved;
+ if(!saved)return buildAssessment(session.data);
+ if(session.assessmentVersion===6)return saved;
+ const previous=session.assessmentVersion===5?previousSkillAssessment(session.data)
+  :session.assessmentVersion===4?previousGroupedAssessment(session.data)
+  :[2,3].includes(session.assessmentVersion)
+  ?earlierNarrative(session.data,'',session.assessmentVersion)
+  :/^(Patient worked on goal|Patient worked on the documented treatment goals)/.test(saved)?previousAssessment(session.data):'';
+ if(previous&&saved===previous)return buildAssessment(session.data);
+ if(previous&&saved.startsWith(previous+' '))return buildAssessment(session.data,saved.slice(previous.length+1));
+ return saved;
+}
+document.addEventListener('click',async e=>{
+ const b=e.target.closest('button');if(!b)return;
+ if('cancelAssessment'in b.dataset){
+  b.form.reset();
+  const editor=b.form.closest('details');
+  editor.open=false;
+  editor.querySelector('summary').focus();
+  return;
+ }
+ const {deleteSession,restoreSession}=b.dataset;
+ if(deleteSession!==undefined||restoreSession!==undefined){
+  const p=patient();
+  const session=p.sessions[Number(deleteSession??restoreSession)];
+  const deleting=deleteSession!==undefined;
+  if(!session||Boolean(session.deleted)===deleting)return;
+  if(deleting&&!window.confirm('Delete the session for '+p.name+' on '+dateLabel(session.date)+'? You can restore it from Deleted sessions.'))return;
+  session.deleted=deleting;
+  save(deleting?'Session moved to Deleted sessions.':'Session restored.',()=>{
+   const panel=document.querySelector('#saved-assessments');
+   panel.innerHTML=savedAssessments(p);
+   queueMicrotask(()=>panel.querySelector('h2').focus());
+  });
+  return;
+ }
+ if(b.dataset.patient){selected=b.dataset.patient;editUpdate=null;render();}
+ if(b.dataset.tab){tab=b.dataset.tab;editUpdate=null;render();}
+ if(b.dataset.editUpdate){editUpdate=b.dataset.editUpdate;render();document.querySelector('#update input[name=title]').focus();}
+ if('cancel'in b.dataset){editUpdate=null;render();}
+ if(b.dataset.archive){const g=patient().goals.find(x=>x.id===b.dataset.archive);g.archived=!g.archived;save(g.archived?'Goal archived.':'Goal reactivated.');}
+ if('copy'in b.dataset){const draft=document.querySelector('#draft');try{await navigator.clipboard.writeText(draft.value);document.querySelector('#copyStatus').textContent='Draft copied.';}catch{draft.select();document.querySelector('#copyStatus').textContent='Draft selected. Use your device’s Copy command.';}}
+});
+document.addEventListener('input',e=>{
+ const fs=e.target.closest('[data-session-goal]');if(!fs)return;
+ const pct=fs.querySelector('[name=measure]').value==='percent';
+ fs.querySelectorAll('[data-trials],[data-percent]').forEach(label=>{label.hidden=pct?label.hasAttribute('data-trials'):label.hasAttribute('data-percent');label.querySelector('input').disabled=label.hidden;});
+ const correct=fs.querySelector('[name=correct]'), total=fs.querySelector('[name=total]');
+ correct.setCustomValidity(!pct&&correct.value!==''&&total.value!==''&&+correct.value>+total.value?'Correct trials cannot exceed total trials.':'');
+ total.setCustomValidity(!pct&&correct.value!==''&&total.value===''?'Enter total trials.':'');
+ if(!pct&&total.value!==''&&correct.value==='')correct.setCustomValidity('Enter correct trials.');
+ fs.querySelector('output').textContent=!pct&&correct.value!==''&&+total.value>0&&+correct.value<=+total.value?Math.round(1000*correct.value/total.value)/10+'% accuracy':'';
+});
+document.addEventListener('submit',async e=>{
+ e.preventDefault();
+ const form=e.target,f=fields(form),p=patient();
+ if(form.dataset.assessmentEdit!==undefined){
+  const session=p.sessions[Number(form.dataset.assessmentEdit)];
+  if(!session||session.deleted)return;
+  const comment=f.comment.trim();
+  session.note=comment;
+  session.assessmentEdited=true;
+  save('Assessment comments saved.',()=>{
+   const paragraph=form.closest('.assessment').querySelector('[data-assessment-comment]');
+   paragraph.textContent=comment||'No assessment comment entered.';
+   paragraph.className=comment?'detail':'muted';
+   form.elements.comment.defaultValue=comment;
+   form.elements.comment.value=comment;
+   const editor=form.closest('details');
+   editor.open=false;
+   queueMicrotask(()=>editor.querySelector('summary').focus());
+  });
+  return;
+ }
+
+ if(form.id==='addPatient'){if(!f.name.trim())return;selected=id();patients.push({id:selected,name:f.name.trim(),background:'',goals:[],updates:[],sessions:[]});form.reset();tab=tabs[0];editUpdate=null;save('Demo patient added.');}
+ if(form.id==='importGoals'){
+  const feedback=document.querySelector('#feedback');
+  workspace.inert=true;
+  let records;
+  try{
+   records=JSON.parse(await f.file.text());
+   if(!Array.isArray(records)||!records.length||!records.every(r=>r&&
+     /^demo-goals-[a-z0-9-]+$/.test(r.id)&&typeof r.name==='string'&&r.name.trim()&&
+     Array.isArray(r.goals)&&r.goals.every(g=>typeof g==='string'&&g.trim())))throw new Error();
+   if(new Set(records.map(r=>r.id)).size!==records.length)throw new Error();
+  }catch{
+   workspace.inert=false;
+   feedback.textContent='Choose a valid fictional goals JSON file.';
+   return;
+  }
+  const additions=records.filter(r=>!patients.some(p=>p.id===r.id));
+  if(!additions.length){
+   workspace.inert=false;
+   feedback.textContent='These demo records are already imported.';
+   return;
+  }
+  patients.push(...additions.map(r=>({id:r.id,name:r.name.trim(),background:'',updates:[],sessions:[],
+   goals:r.goals.map(text=>({id:id(),text:text.trim()}))})));
+  form.reset();
+  document.querySelector('#importPanel').open=false;
+  selected=additions[0].id;
+  editUpdate=null;
+  tab='Goals';
+  save('Imported '+additions.length+' demo records.');
+  return;
+ }
+ if(form.id==='renamePatient'){
+  const name=f.name.trim();
+  if(!name){document.querySelector('#feedback').textContent='Enter a fictional patient name.';return;}
+  p.name=name;
+  save('Patient name saved.',()=>{
+   renderCaseload();
+   document.querySelector('#patientName').textContent=name;
+   form.elements.name.value=name;
+   document.querySelector('#editName').open=false;
+  });
+  return;
+ }
+ if(form.id==='update'){if(!f.title.trim())return;const previous=p.updates.find(x=>x.id===editUpdate);if(previous)Object.assign(previous,f);else p.updates.push({id:id(),...f});editUpdate=null;save('Medical update saved.');}
+ if(form.id==='background'){p.background=f.background.trim();save('Background saved.');}
+ if(form.id==='goal'&&f.text.trim()){p.goals.push({id:id(),text:f.text.trim()});save('Goal added.');}
+ if(form.dataset.goal&&f.text.trim()){p.goals.find(g=>g.id===form.dataset.goal).text=f.text.trim();save('Goal saved.');}
+ if(form.id==='session'){
+  const data=[...form.querySelectorAll('fieldset')].map(fs=>{
+   const v=n=>fs.querySelector('[name='+n+']').value;
+   const trials=v('measure')==='trials',correct=trials?v('correct'):'',total=trials?v('total'):'';
+   const percent=trials?(correct!==''?String(Math.round(1000*correct/total)/10):''):v('percent');
+   const goalId=fs.dataset.sessionGoal;
+   return {goalId,goal:p.goals.find(g=>g.id===goalId).text,correct,total,percent,level:v('level'),cues:[...fs.querySelectorAll(':checked')].filter(x=>x.type==='checkbox').map(x=>x.value),materials:v('materials').trim(),observation:v('observation').trim()};
+  }).filter(d=>!skippedGoal(d)&&(d.percent!==''||d.level||d.cues.length||d.materials||d.observation));
+  if(!data.length&&!f.note.trim()){document.querySelector('#feedback').textContent='Enter a goal result or assessment comment first.';return;}
+  p.sessions.push({date:f.date,note:buildAssessment(data,f.note.trim()),assessmentVersion:6,data});
+  save('Session saved.',()=>{
+   render();
+   const destination=matchMedia('(max-width:880px)').matches?'#saved-assessments':'#new-session';
+   document.querySelector(destination).scrollIntoView({block:'start'});
+  });
+ }
+ if(form.id==='review'){
+  if(f.from&&f.through&&f.from>f.through){document.querySelector('#feedback').textContent='Choose a through date on or after the start date.';return;}
+  document.querySelector('#feedback').textContent='';
+  const inRange=x=>(!f.from||x.date>=f.from)&&(!f.through||x.date<=f.through);
+  const checked=new FormData(form).getAll('updates');
+  const updates=sorted(p.updates).filter(x=>checked.includes(x.id)&&inRange(x));
+  const sessions=sorted(p.sessions).filter(session=>!session.deleted&&inRange(session));
+  const progress=p.goals.map(g=>{
+   const entries=sessions.flatMap(s=>s.data.filter(d=>d.goalId===g.id&&!skippedGoal(d)).map(d=>dateLabel(s.date)+' · '+[metric(d),d.level,...d.cues,d.materials,d.observation].filter(Boolean).join(' · ')+(d.goal!==g.text?' · Goal at visit: '+d.goal:'')));
+   return g.archived&&!entries.length?'':g.text+(g.archived?' (archived)':'')+'\n'+(entries.join('\n')||'No session data in this period.');
+  }).filter(Boolean);
+  document.querySelector('#draft').value='BACKGROUND\n'+(p.background||'')+'\n\nMEDICAL UPDATES\n'+(updates.map(updateText).join('\n\n')||'No selected updates in this period.')+'\n\nGOAL PROGRESS\n'+(progress.join('\n\n')||'No goals recorded.')+'\n\nSESSION ASSESSMENTS\n'+sessions.filter(s=>assessmentText(s)).map(s=>dateLabel(s.date)+' · '+assessmentText(s)).join('\n');
+  document.querySelector('#draftPanel').open=true;
+ }
+});
+async function start(){
+ try{
+  const res=await apiFetch('/api/notebook',{cache:'no-store'});
+  if(!res.ok)throw new Error('Load failed');
+  const saved=await res.json();
+  revision=saved.revision;
+  if(saved.patients)patients=saved.patients;
+  selected=patients[0].id;
+  render();
+  workspace.inert=false;
+  syncMessage.textContent='Sync ready. Use fictional records only.';
+ }catch{
+  syncMessage.textContent='Could not load the synced demo. Refresh to try again.';
+ }
+}
+authReady.then(start);
+</script>
+<dialog id="settingsDialog" aria-labelledby="sdTitle">
+<div class="sd-head"><h2 id="sdTitle">Settings &amp; AI</h2><button type="button" data-close-settings>Close</button></div>
+<div class="sd-body">
+<section><h3>AI connection</h3>
+<p class="muted">The AI drafts session assessment comments and re-evaluations. Paste a Claude API key from console.anthropic.com. The key is encrypted on the server and never shown again.</p>
+<p id="aiKeyStatus" class="ai-status"></p>
+<form id="aiKeyForm"><label>Claude API key<input name="apiKey" type="password" autocomplete="off" placeholder="sk-ant-..."></label>
+<label>Model<select name="model"><option value="claude-opus-5-5">Claude Opus 5.5 (best quality)</option><option value="claude-sonnet-5-5">Claude Sonnet 5.5 (faster)</option><option value="claude-haiku-5-5">Claude Haiku 5.5 (fastest, lowest cost)</option></select></label>
+<div class="ai-row"><button class="primary">Save AI settings</button><button type="button" data-remove-key>Remove key</button></div></form>
+</section>
+<section><h3>Learning Center</h3>
+<p class="muted">Teach the AI how you write. Style rules and samples are used every time it drafts. Add 3–5 of your best real comments for each type, with identifying details removed.</p>
+<form id="styleForm"><label>Style rules<textarea name="styleNotes" rows="5" placeholder="e.g. Write 3–4 sentences. Use “the patient”, never the name. Mention caregiver involvement when present. Avoid the word “demonstrated”."></textarea></label>
+<button>Save style rules</button></form>
+<h4>Samples</h4><div id="sampleList"></div>
+<form id="sampleForm"><div class="row"><label>Type<select name="kind"><option value="assessment">Session assessment comment</option><option value="reevaluation">Re-evaluation</option></select></label>
+<label>Label (optional)<input name="title" maxlength="120" placeholder="e.g. AAC session, strong example"></label></div>
+<label>Sample text<textarea name="text" rows="6" required placeholder="Paste a response written exactly the way you want the AI to write."></textarea></label>
+<button class="primary">Add sample</button></form>
+<p id="settingsMsg" class="ai-status" role="status"></p>
+</section></div></dialog>
+<script>
+'use strict';
+// Settings, Learning Center, and AI drafting.
+let aiSettings=null;
+const dlg=document.querySelector('#settingsDialog');
+const kindLabel={assessment:'Assessment',reevaluation:'Re-evaluation'};
+async function aiApi(path,method='GET',body){
+ const res=await apiFetch(path,{method,headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined});
+ let data={};try{data=await res.json();}catch{}
+ if(!res.ok)throw new Error(data.error||'Request failed.');
+ return data;
+}
+function renderSettings(){
+ const st=aiSettings;if(!st)return;
+ document.querySelector('#aiKeyStatus').textContent=st.hasKey?'Key saved (ends in '+st.keyLast4+').':st.serverKey?'Using the shared server key.':'No API key yet. AI drafting is off.';
+ const kf=document.querySelector('#aiKeyForm');kf.model.value=st.model;
+ document.querySelector('[data-remove-key]').hidden=!st.hasKey;
+ document.querySelector('#styleForm').styleNotes.value=st.styleNotes;
+ document.querySelector('#sampleList').innerHTML=st.examples.length?st.examples.map(e=>'<div class="sample"><header><span class="kind">'+esc(kindLabel[e.kind])+'</span>'+esc(e.title||'Untitled sample')+'<button type="button" data-delete-sample="'+esc(e.id)+'">Delete</button></header><p>'+esc(e.text)+'</p></div>').join(''):'<p class="muted">No samples yet.</p>';
+}
+async function loadAi(){if(!aiSettings)aiSettings=await aiApi('/api/ai-settings');return aiSettings;}
+const setMsg=t=>{document.querySelector('#settingsMsg').textContent=t;};
+async function saveAi(patch,done){
+ try{aiSettings=await aiApi('/api/ai-settings','PUT',patch);renderSettings();setMsg(done);return true;}
+ catch(err){setMsg(err.message);document.querySelector('#aiKeyStatus').textContent=err.message;return false;}
+}
+document.querySelector('#openSettings').addEventListener('click',async()=>{
+ setMsg('');dlg.showModal();
+ try{await loadAi();renderSettings();}catch(err){setMsg(err.message);}
+});
+dlg.addEventListener('click',e=>{if(e.target.closest('[data-close-settings]')||e.target===dlg)dlg.close();});
+dlg.addEventListener('submit',async e=>{
+ e.preventDefault();e.stopPropagation();
+ const form=e.target,f=Object.fromEntries(new FormData(form)),btn=e.submitter;
+ if(btn)btn.disabled=true;
+ if(form.id==='aiKeyForm'){
+  const patch={model:f.model};if(f.apiKey.trim())patch.apiKey=f.apiKey.trim();
+  document.querySelector('#aiKeyStatus').textContent=patch.apiKey?'Checking key with Anthropic…':'Saving…';
+  if(await saveAi(patch,'AI settings saved.'))form.apiKey.value='';
+ }
+ if(form.id==='styleForm')await saveAi({styleNotes:f.styleNotes},'Style rules saved.');
+ if(form.id==='sampleForm'){
+  await loadAi();
+  if(await saveAi({examples:[...aiSettings.examples,{id:crypto.randomUUID(),kind:f.kind,title:f.title.trim(),text:f.text.trim()}]},'Sample added.'))form.reset();
+ }
+ if(btn)btn.disabled=false;
+},true);
+dlg.addEventListener('click',async e=>{
+ const b=e.target.closest('button');if(!b)return;
+ if('removeKey'in b.dataset&&confirm('Remove your saved Claude API key?'))await saveAi({removeKey:true},'Key removed.');
+ if(b.dataset.deleteSample&&confirm('Delete this sample?'))await saveAi({examples:aiSettings.examples.filter(x=>x.id!==b.dataset.deleteSample)},'Sample deleted.');
+});
+// Assessment input: goal work without numeric accuracy, plus the clinician's current comment.
+function assessmentInput(session,current){
+ const goals=session.data.filter(d=>!skippedGoal(d)).map(d=>'- Goal: '+d.goal+[d.level&&'Cueing level: '+d.level,d.cues.length&&'Supports: '+d.cues.join(', '),d.materials&&'Materials/activity: '+d.materials,d.observation&&'Observation: '+d.observation].filter(Boolean).map(x=>'\n  '+x).join(''));
+ return 'Session goals addressed:\n'+(goals.join('\n')||'(none recorded)')+'\n\nClinician notes / current comment:\n'+(current||'(none)');
+}
+async function draft(kind,input,status){
+ status.textContent='Drafting with AI…';
+ try{const r=await aiApi('/api/ai-draft','POST',{kind,input});status.textContent='AI draft ready. Review and edit before saving.';return r.text;}
+ catch(err){status.textContent=err.message;return null;}
+}
+document.addEventListener('click',async e=>{
+ const b=e.target.closest('button');if(!b||b.closest('dialog'))return;
+ if('aiAssessment'in b.dataset){
+  const form=b.form,session=patient().sessions[Number(form.dataset.assessmentEdit)],status=form.querySelector('.ai-status');
+  b.disabled=true;const text=await draft('assessment',assessmentInput(session,form.comment.value.trim()),status);b.disabled=false;
+  if(text)form.comment.value=text;
+ }
+ if('aiReeval'in b.dataset){
+  const area=document.querySelector('#draft'),status=document.querySelector('#copyStatus');
+  if(!area.value.trim()){status.textContent='Build the draft first.';return;}
+  b.disabled=true;const text=await draft('reevaluation',area.value.replace(patient().name,'the patient'),status);b.disabled=false;
+  if(text)area.value=text;
+ }
+ if(b.dataset.sampleFrom){
+  const kind=b.dataset.sampleFrom,text=(kind==='assessment'?b.form.comment:document.querySelector('#draft')).value.trim();
+  const status=kind==='assessment'?b.form.querySelector('.ai-status'):document.querySelector('#copyStatus');
+  if(!text){status.textContent='Nothing to save yet.';return;}
+  try{await loadAi();aiSettings=await aiApi('/api/ai-settings','PUT',{examples:[...aiSettings.examples,{id:crypto.randomUUID(),kind,title:'Saved '+today(),text}]});status.textContent='Saved to the Learning Center.';}
+  catch(err){status.textContent=err.message;}
+ }
+});
+</script>
+</html>
