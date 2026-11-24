@@ -56,3 +56,27 @@ $$;
 
 revoke all on function public.save_notebook(integer, jsonb) from public, anon;
 grant execute on function public.save_notebook(integer, jsonb) to authenticated;
+
+-- AI settings + Learning Center (one row per user).
+-- The API key is stored only as AES-256-GCM ciphertext, encrypted by the Netlify
+-- function with AI_KEY_SECRET; the browser never receives it back.
+create table if not exists public.ai_settings (
+  user_id        uuid primary key default auth.uid() references auth.users(id) on delete cascade,
+  model          text not null default 'claude-opus-5-5',
+  key_ciphertext text,
+  key_last4      text,
+  style_notes    text not null default '',
+  examples       jsonb not null default '[]'::jsonb,
+  updated_at     timestamptz not null default now()
+);
+
+alter table public.ai_settings enable row level security;
+
+drop policy if exists "ai_settings_select_own" on public.ai_settings;
+drop policy if exists "ai_settings_insert_own" on public.ai_settings;
+drop policy if exists "ai_settings_update_own" on public.ai_settings;
+drop policy if exists "ai_settings_delete_own" on public.ai_settings;
+create policy "ai_settings_select_own" on public.ai_settings for select to authenticated using (user_id = auth.uid());
+create policy "ai_settings_insert_own" on public.ai_settings for insert to authenticated with check (user_id = auth.uid());
+create policy "ai_settings_update_own" on public.ai_settings for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+create policy "ai_settings_delete_own" on public.ai_settings for delete to authenticated using (user_id = auth.uid());

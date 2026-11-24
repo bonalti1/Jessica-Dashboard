@@ -1,0 +1,8 @@
+{
+  "name": "slp-caseload-notebook",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.13.0"
+  }
+}

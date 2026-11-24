@@ -20,8 +20,20 @@
 #authPanel .auth-actions{display:flex;gap:8px;flex-wrap:wrap}#authMsg:not(:empty){margin-top:12px;color:#4d3c90;font-weight:600}
 #signOut{float:right;margin-top:2px;background:transparent;color:#dfd8ff;border:1px solid #6d63a8;border-radius:6px;padding:5px 10px;font:13px system-ui;cursor:pointer}
 [hidden]{display:none!important}
+#openSettings{float:right;margin:2px 8px 0 0;background:transparent;color:#dfd8ff;border:1px solid #6d63a8;border-radius:6px;padding:5px 10px;font:13px system-ui;cursor:pointer}
+.ai-row{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}.ai-status{color:#4d3c90;font-size:14px;font-weight:600}
+#settingsDialog{width:min(760px,calc(100vw - 32px));max-height:calc(100vh - 48px);border:1px solid #d9d4ee;border-radius:12px;padding:0;color:#242538}
+#settingsDialog::backdrop{background:rgba(30,25,60,.45)}
+#settingsDialog .sd-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:#292449;color:#fff;position:sticky;top:0}
+#settingsDialog .sd-head h2{margin:0;font-size:18px}#settingsDialog .sd-head button{background:transparent;color:#fff;border:1px solid #6d63a8;border-radius:6px;padding:4px 10px;cursor:pointer}
+#settingsDialog .sd-body{padding:4px 20px 20px}#settingsDialog section{border-bottom:1px solid #ebe8f5;padding:14px 0}
+#settingsDialog label{display:block;margin:8px 0;font-size:14px}#settingsDialog input,#settingsDialog select,#settingsDialog textarea{display:block;width:100%;margin-top:4px;padding:8px;font:inherit;border:1px solid #cfcbe3;border-radius:6px}
+#settingsDialog .muted{color:#5b5c72;font-size:14px;margin:4px 0}
+.sample{border:1px solid #e2dff0;border-radius:8px;padding:10px 12px;margin:8px 0;background:#faf9fe}
+.sample header{all:unset;display:flex;gap:8px;align-items:center;font-weight:600;font-size:14px}.sample .kind{font-size:12px;background:#ece8fb;color:#4d3c90;border-radius:999px;padding:2px 8px}
+.sample p{margin:6px 0 0;font-size:14px;white-space:pre-wrap;max-height:7.5em;overflow:auto}.sample button{margin-left:auto}
 </style>
-<header><button id="signOut" type="button" hidden>Sign out</button>SLP Caseload Notebook<small>Fictional records only · Syncs across devices after a successful save</small></header>
+<header><button id="signOut" type="button" hidden>Sign out</button><button id="openSettings" type="button" hidden>Settings &amp; AI</button>SLP Caseload Notebook<small>Fictional records only · Syncs across devices after a successful save</small></header>
 <p id="sync" class="notice" role="status" style="margin:12px 18px">Loading synced demo…</p><div id="workspace" class="layout" inert><aside><h2>Caseload</h2><div id="patients"></div><form id="addPatient"><label>Demo patient label<input name="name" required placeholder="e.g. Demo C"></label><button>Add demo patient</button></form><details id="importPanel"><summary>Import demo goals</summary><form id="importGoals"><label>Fictional goals JSON file<input type="file" name="file" accept=".json,application/json" required></label><button>Import goals</button></form></details></aside><main id="main"></main></div>
 <section id="authPanel" hidden><h2>Sign in</h2><p>Your notebook is private to your account and syncs across devices.</p>
 <form id="authForm"><label>Email<input name="email" type="email" autocomplete="email" required></label>
@@ -48,7 +60,7 @@ async function apiFetch(url,init={}){
  if(!cfg?.supabaseUrl||!cfg?.supabaseAnonKey){sync.textContent='Server is not configured yet (missing Supabase settings).';return;}
  sb=supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
  const ws=document.querySelector('#workspace');
- const ready=()=>{panel.hidden=true;out.hidden=false;sync.hidden=false;ws.hidden=false;resolveAuth();};
+ const ready=()=>{panel.hidden=true;out.hidden=false;document.querySelector('#openSettings').hidden=false;sync.hidden=false;ws.hidden=false;resolveAuth();};
  out.onclick=async()=>{await sb.auth.signOut();location.reload();};
  sb.auth.onAuthStateChange((event,session)=>{
   if(event==='PASSWORD_RECOVERY'){const pw=prompt('Enter a new password (8+ characters):');if(pw)sb.auth.updateUser({password:pw}).then(({error})=>alert(error?error.message:'Password updated.'));}
@@ -150,7 +162,7 @@ const views={
    '<button class="primary">Save session</button></form></article>'+
    '<article id="saved-assessments">'+savedAssessments(p)+'</article></div>';
  },
- 'Re-evaluation':p=>'<article><h2>Re-evaluation draft</h2><p class="muted">Choose your review period and the medical updates to include. Background and session data are pulled from this patient’s record.</p><form id="review"><div class="row"><label>From<input type="date" name="from"></label><label>Through<input type="date" name="through" value="'+today()+'"></label></div>'+sorted(p.updates).map(u=>'<label><input type="checkbox" name="updates" value="'+u.id+'" checked> '+esc(dateLabel(u.date)+' · '+u.title+' · '+u.status)+'</label>').join('')+'<button class="primary">Build draft</button></form><details id="draftPanel"><summary>Editable draft</summary><label>Re-evaluation text<textarea id="draft" rows="14"></textarea></label><button data-copy>Copy draft</button><div id="copyStatus" role="status"></div></details></article>'
+ 'Re-evaluation':p=>'<article><h2>Re-evaluation draft</h2><p class="muted">Choose your review period and the medical updates to include. Background and session data are pulled from this patient’s record.</p><form id="review"><div class="row"><label>From<input type="date" name="from"></label><label>Through<input type="date" name="through" value="'+today()+'"></label></div>'+sorted(p.updates).map(u=>'<label><input type="checkbox" name="updates" value="'+u.id+'" checked> '+esc(dateLabel(u.date)+' · '+u.title+' · '+u.status)+'</label>').join('')+'<button class="primary">Build draft</button></form><details id="draftPanel"><summary>Editable draft</summary><label>Re-evaluation text<textarea id="draft" rows="14"></textarea></label><button data-copy>Copy draft</button> <button type="button" data-ai-reeval>✨ Rewrite with AI</button> <button type="button" data-sample-from="reevaluation">Save as sample</button><div id="copyStatus" class="ai-status" role="status"></div></details></article>'
 };
 function savedAssessments(patient){
  const entries=sorted(patient.sessions.map((session,index)=>({...session,index})).reverse());
@@ -164,6 +176,7 @@ function savedAssessments(patient){
    '<details><summary>Edit assessment comments</summary><form data-assessment-edit="'+session.index+'">'+
    '<label>Assessment comments<textarea name="comment" rows="6">\n'+esc(comment)+'</textarea></label>'+
    '<button class="primary">Save comments</button> <button type="button" data-cancel-assessment>Cancel</button>'+
+   '<div class="ai-row"><button type="button" data-ai-assessment>✨ Draft with AI</button> <button type="button" data-sample-from="assessment">Save as sample</button> <span class="ai-status" role="status"></span></div>'+
    '</form></details>'+
    (results?'<details><summary>Goal results ('+session.data.length+')</summary>'+results+'</details>':'')+
    '<details><summary>Session options</summary><button type="button" data-delete-session="'+session.index+'">Delete session</button></details></section>';
@@ -639,5 +652,110 @@ async function start(){
  }
 }
 authReady.then(start);
+</script>
+<dialog id="settingsDialog" aria-labelledby="sdTitle">
+<div class="sd-head"><h2 id="sdTitle">Settings &amp; AI</h2><button type="button" data-close-settings>Close</button></div>
+<div class="sd-body">
+<section><h3>AI connection</h3>
+<p class="muted">The AI drafts session assessment comments and re-evaluations. Paste a Claude API key from console.anthropic.com. The key is encrypted on the server and never shown again.</p>
+<p id="aiKeyStatus" class="ai-status"></p>
+<form id="aiKeyForm"><label>Claude API key<input name="apiKey" type="password" autocomplete="off" placeholder="sk-ant-..."></label>
+<label>Model<select name="model"><option value="claude-opus-5-5">Claude Opus 5.5 (best quality)</option><option value="claude-sonnet-5-5">Claude Sonnet 5.5 (faster)</option><option value="claude-haiku-5-5">Claude Haiku 5.5 (fastest, lowest cost)</option></select></label>
+<div class="ai-row"><button class="primary">Save AI settings</button><button type="button" data-remove-key>Remove key</button></div></form>
+</section>
+<section><h3>Learning Center</h3>
+<p class="muted">Teach the AI how you write. Style rules and samples are used every time it drafts. Add 3–5 of your best real comments for each type, with identifying details removed.</p>
+<form id="styleForm"><label>Style rules<textarea name="styleNotes" rows="5" placeholder="e.g. Write 3–4 sentences. Use “the patient”, never the name. Mention caregiver involvement when present. Avoid the word “demonstrated”."></textarea></label>
+<button>Save style rules</button></form>
+<h4>Samples</h4><div id="sampleList"></div>
+<form id="sampleForm"><div class="row"><label>Type<select name="kind"><option value="assessment">Session assessment comment</option><option value="reevaluation">Re-evaluation</option></select></label>
+<label>Label (optional)<input name="title" maxlength="120" placeholder="e.g. AAC session, strong example"></label></div>
+<label>Sample text<textarea name="text" rows="6" required placeholder="Paste a response written exactly the way you want the AI to write."></textarea></label>
+<button class="primary">Add sample</button></form>
+<p id="settingsMsg" class="ai-status" role="status"></p>
+</section></div></dialog>
+<script>
+'use strict';
+// Settings, Learning Center, and AI drafting.
+let aiSettings=null;
+const dlg=document.querySelector('#settingsDialog');
+const kindLabel={assessment:'Assessment',reevaluation:'Re-evaluation'};
+async function aiApi(path,method='GET',body){
+ const res=await apiFetch(path,{method,headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined});
+ let data={};try{data=await res.json();}catch{}
+ if(!res.ok)throw new Error(data.error||'Request failed.');
+ return data;
+}
+function renderSettings(){
+ const st=aiSettings;if(!st)return;
+ document.querySelector('#aiKeyStatus').textContent=st.hasKey?'Key saved (ends in '+st.keyLast4+').':st.serverKey?'Using the shared server key.':'No API key yet. AI drafting is off.';
+ const kf=document.querySelector('#aiKeyForm');kf.model.value=st.model;
+ document.querySelector('[data-remove-key]').hidden=!st.hasKey;
+ document.querySelector('#styleForm').styleNotes.value=st.styleNotes;
+ document.querySelector('#sampleList').innerHTML=st.examples.length?st.examples.map(e=>'<div class="sample"><header><span class="kind">'+esc(kindLabel[e.kind])+'</span>'+esc(e.title||'Untitled sample')+'<button type="button" data-delete-sample="'+esc(e.id)+'">Delete</button></header><p>'+esc(e.text)+'</p></div>').join(''):'<p class="muted">No samples yet.</p>';
+}
+async function loadAi(){if(!aiSettings)aiSettings=await aiApi('/api/ai-settings');return aiSettings;}
+const setMsg=t=>{document.querySelector('#settingsMsg').textContent=t;};
+async function saveAi(patch,done){
+ try{aiSettings=await aiApi('/api/ai-settings','PUT',patch);renderSettings();setMsg(done);return true;}
+ catch(err){setMsg(err.message);document.querySelector('#aiKeyStatus').textContent=err.message;return false;}
+}
+document.querySelector('#openSettings').addEventListener('click',async()=>{
+ setMsg('');dlg.showModal();
+ try{await loadAi();renderSettings();}catch(err){setMsg(err.message);}
+});
+dlg.addEventListener('click',e=>{if(e.target.closest('[data-close-settings]')||e.target===dlg)dlg.close();});
+dlg.addEventListener('submit',async e=>{
+ e.preventDefault();e.stopPropagation();
+ const form=e.target,f=Object.fromEntries(new FormData(form)),btn=e.submitter;
+ if(btn)btn.disabled=true;
+ if(form.id==='aiKeyForm'){
+  const patch={model:f.model};if(f.apiKey.trim())patch.apiKey=f.apiKey.trim();
+  document.querySelector('#aiKeyStatus').textContent=patch.apiKey?'Checking key with Anthropic…':'Saving…';
+  if(await saveAi(patch,'AI settings saved.'))form.apiKey.value='';
+ }
+ if(form.id==='styleForm')await saveAi({styleNotes:f.styleNotes},'Style rules saved.');
+ if(form.id==='sampleForm'){
+  await loadAi();
+  if(await saveAi({examples:[...aiSettings.examples,{id:crypto.randomUUID(),kind:f.kind,title:f.title.trim(),text:f.text.trim()}]},'Sample added.'))form.reset();
+ }
+ if(btn)btn.disabled=false;
+},true);
+dlg.addEventListener('click',async e=>{
+ const b=e.target.closest('button');if(!b)return;
+ if('removeKey'in b.dataset&&confirm('Remove your saved Claude API key?'))await saveAi({removeKey:true},'Key removed.');
+ if(b.dataset.deleteSample&&confirm('Delete this sample?'))await saveAi({examples:aiSettings.examples.filter(x=>x.id!==b.dataset.deleteSample)},'Sample deleted.');
+});
+// Assessment input: goal work without numeric accuracy, plus the clinician's current comment.
+function assessmentInput(session,current){
+ const goals=session.data.filter(d=>!skippedGoal(d)).map(d=>'- Goal: '+d.goal+[d.level&&'Cueing level: '+d.level,d.cues.length&&'Supports: '+d.cues.join(', '),d.materials&&'Materials/activity: '+d.materials,d.observation&&'Observation: '+d.observation].filter(Boolean).map(x=>'\n  '+x).join(''));
+ return 'Session goals addressed:\n'+(goals.join('\n')||'(none recorded)')+'\n\nClinician notes / current comment:\n'+(current||'(none)');
+}
+async function draft(kind,input,status){
+ status.textContent='Drafting with AI…';
+ try{const r=await aiApi('/api/ai-draft','POST',{kind,input});status.textContent='AI draft ready. Review and edit before saving.';return r.text;}
+ catch(err){status.textContent=err.message;return null;}
+}
+document.addEventListener('click',async e=>{
+ const b=e.target.closest('button');if(!b||b.closest('dialog'))return;
+ if('aiAssessment'in b.dataset){
+  const form=b.form,session=patient().sessions[Number(form.dataset.assessmentEdit)],status=form.querySelector('.ai-status');
+  b.disabled=true;const text=await draft('assessment',assessmentInput(session,form.comment.value.trim()),status);b.disabled=false;
+  if(text)form.comment.value=text;
+ }
+ if('aiReeval'in b.dataset){
+  const area=document.querySelector('#draft'),status=document.querySelector('#copyStatus');
+  if(!area.value.trim()){status.textContent='Build the draft first.';return;}
+  b.disabled=true;const text=await draft('reevaluation',area.value.replace(patient().name,'the patient'),status);b.disabled=false;
+  if(text)area.value=text;
+ }
+ if(b.dataset.sampleFrom){
+  const kind=b.dataset.sampleFrom,text=(kind==='assessment'?b.form.comment:document.querySelector('#draft')).value.trim();
+  const status=kind==='assessment'?b.form.querySelector('.ai-status'):document.querySelector('#copyStatus');
+  if(!text){status.textContent='Nothing to save yet.';return;}
+  try{await loadAi();aiSettings=await aiApi('/api/ai-settings','PUT',{examples:[...aiSettings.examples,{id:crypto.randomUUID(),kind,title:'Saved '+today(),text}]});status.textContent='Saved to the Learning Center.';}
+  catch(err){status.textContent=err.message;}
+ }
+});
 </script>
 </html>
