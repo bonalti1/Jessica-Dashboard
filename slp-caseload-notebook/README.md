@@ -2,7 +2,7 @@
 
 The notebook from the original Worker/D1 snapshot, moved to:
 
-- **Netlify**: static page (`public/`) + two functions
+- **Netlify**: static page (`public/`) + four functions
   - `GET/PUT /api/notebook`: loads and saves the signed-in user's notebook (same validation, 500 KB cap, origin check and revision/409 conflict handling as the original)
   - `GET /api/config`: gives the browser the public Supabase URL and anon key
   - `GET/PUT /api/ai-settings`: the user's Claude API key (write-only, AES-256-GCM encrypted), model, and Learning Center
