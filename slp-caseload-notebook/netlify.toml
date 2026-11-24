@@ -1,0 +1,16 @@
+# Netlify site for the SLP Caseload Notebook.
+# When linking this repo in Netlify, set "Base directory" to slp-caseload-notebook.
+[build]
+  publish = "public"
+  command = "echo 'static site, no build step'"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "same-origin"
